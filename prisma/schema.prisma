@@ -1,0 +1,379 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // For credentials login
+  resetToken    String?   // For password reset
+  resetTokenExpiry DateTime? // Reset token expiration
+  accounts      Account[]
+  sessions      Session[]
+  
+  // CollabHub specific fields
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Workspace relationships
+  workspaceMembers WorkspaceMember[]
+  createdWorkspaces Workspace[] @relation("WorkspaceCreator")
+  sentInvitations WorkspaceInvitation[]
+  
+  // Content relationships
+  createdTasks Task[] @relation("TaskCreator")
+  assignedTasks Task[] @relation("TaskAssignee")
+  documents Document[]
+  chatMessages ChatMessage[]
+  uploadedFiles File[] @relation("FileUploader")
+  fileActivitiesPerformed FileActivity[] @relation("FileActivityPerformer")
+  fileActivitiesAsOwner FileActivity[] @relation("FileActivityOriginalOwner")
+  documentActivitiesPerformed DocumentActivity[] @relation("DocumentActivityPerformer")
+  documentActivitiesAsAuthor DocumentActivity[] @relation("DocumentActivityOriginalAuthor")
+  createdChannels ChatChannel[] @relation("ChannelCreator")
+  
+  // Task management relationships
+  notifications Notification[]
+  taskActivitiesPerformed TaskActivity[] @relation("TaskActivityPerformer")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Creator relationship
+  creatorId   String
+  creator     User @relation("WorkspaceCreator", fields: [creatorId], references: [id])
+  
+  // Members
+  members     WorkspaceMember[]
+  
+  // Content
+  tasks       Task[]
+  documents   Document[]
+  chatChannels ChatChannel[]
+  meetings    Meeting[]
+  files       File[]
+  invitations WorkspaceInvitation[]
+  fileActivities FileActivity[]
+  documentActivities DocumentActivity[]
+  notifications Notification[]
+  taskActivities TaskActivity[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  role        Role     @default(MEMBER)
+  joinedAt    DateTime @default(now())
+  
+  // Relationships
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, workspaceId])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  creatorId   String
+  creator     User @relation("TaskCreator", fields: [creatorId], references: [id])
+  
+  assigneeId  String?
+  assignee    User? @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  
+  files       File[]
+  
+  // Task management relationships
+  notifications Notification[]
+  activities TaskActivity[]
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  authorId    String
+  author      User @relation(fields: [authorId], references: [id])
+}
+
+model ChatChannel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  createdById String
+  createdBy   User @relation("ChannelCreator", fields: [createdById], references: [id])
+  
+  messages    ChatMessage[]
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  channelId   String
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  authorId    String
+  author      User @relation(fields: [authorId], references: [id])
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime?
+  meetingUrl  String?
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  size        Int
+  mimeType    String
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  taskId      String?
+  task        Task? @relation(fields: [taskId], references: [id])
+  
+  // File ownership
+  uploadedById String
+  uploadedBy   User @relation("FileUploader", fields: [uploadedById], references: [id])
+}
+
+model WorkspaceInvitation {
+  id          String   @id @default(cuid())
+  email       String
+  role        Role     @default(MEMBER)
+  token       String   @unique
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  invitedById String
+  invitedBy   User @relation(fields: [invitedById], references: [id])
+  
+  @@unique([workspaceId, email])
+}
+
+model FileActivity {
+  id          String   @id @default(cuid())
+  action      FileAction
+  fileName    String
+  fileSize    Int?
+  fileMimeType String?
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  performedById String
+  performedBy   User @relation("FileActivityPerformer", fields: [performedById], references: [id])
+  
+  originalOwnerId String?
+  originalOwner   User? @relation("FileActivityOriginalOwner", fields: [originalOwnerId], references: [id])
+}
+
+model DocumentActivity {
+  id          String   @id @default(cuid())
+  action      DocumentAction
+  documentTitle String
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  performedById String
+  performedBy   User @relation("DocumentActivityPerformer", fields: [performedById], references: [id])
+  
+  originalAuthorId String?
+  originalAuthor   User? @relation("DocumentActivityOriginalAuthor", fields: [originalAuthorId], references: [id])
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum FileAction {
+  UPLOADED
+  DELETED
+  RENAMED
+}
+
+enum DocumentAction {
+  CREATED
+  DELETED
+  RENAMED
+  UPDATED
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  taskId      String?
+  task        Task? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model TaskActivity {
+  id          String   @id @default(cuid())
+  action      TaskAction
+  description String
+  previousValue String?
+  newValue    String?
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  taskId      String
+  task        Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  performedById String
+  performedBy   User @relation("TaskActivityPerformer", fields: [performedById], references: [id])
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_STATUS_CHANGED
+  TASK_COMPLETED
+}
+
+enum TaskAction {
+  CREATED
+  ASSIGNED
+  UNASSIGNED
+  STATUS_CHANGED
+  DELETED
+}
