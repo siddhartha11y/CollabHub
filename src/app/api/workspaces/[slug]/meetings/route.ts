@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { generateGoogleMeetLink } from "@/lib/google-meet"
 
 const createMeetingSchema = z.object({
   title: z.string().min(1, "Meeting title is required"),
@@ -60,6 +61,15 @@ export async function GET(
     const meetings = await prisma.meeting.findMany({
       where: {
         workspaceId: workspace.id
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       },
       orderBy: {
         startTime: "asc"
@@ -124,6 +134,9 @@ export async function POST(
       )
     }
 
+    // Generate Google Meet link
+    const meetingUrl = generateGoogleMeetLink(title, startTime, endTime)
+
     // Create meeting
     const meeting = await prisma.meeting.create({
       data: {
@@ -132,7 +145,17 @@ export async function POST(
         startTime,
         endTime,
         workspaceId: workspace.id,
-        meetingUrl: `https://meet.google.com/new` // Placeholder - would integrate with actual video service
+        ...(user.id && { creatorId: user.id }), // Only add creatorId if user exists
+        meetingUrl
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
     })
 

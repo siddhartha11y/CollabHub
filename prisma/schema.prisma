@@ -73,6 +73,7 @@ model User {
   // Task management relationships
   notifications Notification[]
   taskActivitiesPerformed TaskActivity[] @relation("TaskActivityPerformer")
+  createdMeetings Meeting[] @relation("MeetingCreator")
 }
 
 model VerificationToken {
@@ -177,8 +178,8 @@ model ChatChannel {
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   
-  createdById String
-  createdBy   User @relation("ChannelCreator", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User? @relation("ChannelCreator", fields: [createdById], references: [id])
   
   messages    ChatMessage[]
 }
@@ -208,6 +209,9 @@ model Meeting {
   // Relationships
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  creatorId   String?
+  creator     User? @relation("MeetingCreator", fields: [creatorId], references: [id])
 }
 
 model File {

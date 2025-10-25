@@ -13,10 +13,12 @@ import {
   Video,
   Calendar,
   Clock,
-  ExternalLink
+  ExternalLink,
+  User
 } from "lucide-react"
 import Link from "next/link"
 import { CreateMeetingModal } from "@/components/create-meeting-modal"
+import { formatDisplayTime, formatDisplayDateTime, isUpcoming, isPast } from "@/lib/date-utils"
 
 export default function MeetingsPage() {
   const { data: session } = useSession()
@@ -62,13 +64,7 @@ export default function MeetingsPage() {
     ))
   }
 
-  const isUpcoming = (startTime: string) => {
-    return new Date(startTime) > new Date()
-  }
 
-  const isPast = (startTime: string) => {
-    return new Date(startTime) < new Date()
-  }
 
   const upcomingMeetings = meetings.filter(meeting => isUpcoming(meeting.startTime))
   const pastMeetings = meetings.filter(meeting => isPast(meeting.startTime))
@@ -156,9 +152,15 @@ export default function MeetingsPage() {
                       </div>
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                         <Clock className="h-4 w-4 mr-2" />
-                        {new Date(meeting.startTime).toLocaleTimeString()} 
-                        {meeting.endTime && ` - ${new Date(meeting.endTime).toLocaleTimeString()}`}
+                        {formatDisplayTime(meeting.startTime)} 
+                        {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
                       </div>
+                      {meeting.creator && (
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <User className="h-4 w-4 mr-2" />
+                          Created by {meeting.creator.name || meeting.creator.email}
+                        </div>
+                      )}
                     </div>
                     
                     {meeting.meetingUrl && (
@@ -214,9 +216,15 @@ export default function MeetingsPage() {
                       </div>
                       <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                         <Clock className="h-4 w-4 mr-2" />
-                        {new Date(meeting.startTime).toLocaleTimeString()}
-                        {meeting.endTime && ` - ${new Date(meeting.endTime).toLocaleTimeString()}`}
+                        {formatDisplayTime(meeting.startTime)}
+                        {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
                       </div>
+                      {meeting.creator && (
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <User className="h-4 w-4 mr-2" />
+                          Created by {meeting.creator.name || meeting.creator.email}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
