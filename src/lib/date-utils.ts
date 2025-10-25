@@ -24,7 +24,8 @@ export function formatDisplayTime(date: Date | string): string {
   return dateObj.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: true,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
   })
 }
 
@@ -61,15 +62,12 @@ export function isUpcoming(date: Date | string): boolean {
 
 /**
  * Converts datetime-local input value to proper Date object
- * The datetime-local input gives us local time, but we need to ensure it's treated as local
+ * The datetime-local input gives us local time in YYYY-MM-DDTHH:MM format
  */
 export function parseInputDateTime(dateTimeString: string): Date {
-  // Create date object treating the input as local time
-  const date = new Date(dateTimeString)
-  
-  // Adjust for timezone offset to ensure we store the actual local time
-  const timezoneOffset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - timezoneOffset)
+  // The datetime-local input already gives us the correct local time
+  // We just need to create a Date object from it
+  return new Date(dateTimeString)
 }
 
 /**

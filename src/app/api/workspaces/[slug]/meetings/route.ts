@@ -134,7 +134,7 @@ export async function POST(
       )
     }
 
-    // Generate Google Meet link
+    // Generate direct Google Meet link
     const meetingUrl = generateGoogleMeetLink(title, startTime, endTime)
 
     // Create meeting

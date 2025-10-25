@@ -125,15 +125,18 @@ export default function MeetingsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Workspace</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+        <div className="container mx-auto px-4 py-4">
+          {/* Mobile Layout */}
+          <div className="flex flex-col space-y-4 md:hidden">
+            <div className="flex items-center justify-between">
+              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
+                <ArrowLeft className="h-5 w-5" />
+                <span className="text-sm">Back</span>
+              </Link>
+              <ThemeToggle />
+            </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
                 <Video className="h-5 w-5" />
                 <span>Meetings</span>
               </h1>
@@ -141,19 +144,48 @@ export default function MeetingsPage() {
                 {workspace?.name} • {meetings.length} meetings
               </p>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
             <CreateMeetingModal 
               workspaceSlug={params.slug as string}
               onMeetingCreated={handleMeetingCreated}
             >
-              <Button>
+              <Button className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Schedule Meeting
               </Button>
             </CreateMeetingModal>
-            <ThemeToggle />
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
+                <ArrowLeft className="h-5 w-5" />
+                <span>Back to Workspace</span>
+              </Link>
+              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+                  <Video className="h-5 w-5" />
+                  <span>Meetings</span>
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {workspace?.name} • {meetings.length} meetings
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <CreateMeetingModal 
+                workspaceSlug={params.slug as string}
+                onMeetingCreated={handleMeetingCreated}
+              >
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Schedule Meeting
+                </Button>
+              </CreateMeetingModal>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
@@ -166,23 +198,23 @@ export default function MeetingsPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Upcoming Meetings
             </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {upcomingMeetings.map((meeting) => (
                 <Card key={meeting.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg mb-1">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base sm:text-lg mb-1 truncate">
                           {meeting.title}
                         </CardTitle>
-                        <Badge variant="secondary" className="mb-2">
+                        <Badge variant="secondary" className="mb-2 text-xs">
                           Upcoming
                         </Badge>
                       </div>
                       {canDeleteMeeting(meeting) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" className="flex-shrink-0">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -203,40 +235,49 @@ export default function MeetingsPage() {
                     </div>
                   </CardHeader>
                   
-                  <CardContent>
+                  <CardContent className="pt-0">
                     {meeting.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
                         {meeting.description}
                       </p>
                     )}
                     
                     <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {new Date(meeting.startTime).toLocaleDateString()}
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{new Date(meeting.startTime).toLocaleDateString()}</span>
                       </div>
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <Clock className="h-4 w-4 mr-2" />
-                        {formatDisplayTime(meeting.startTime)} 
-                        {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">
+                          {formatDisplayTime(meeting.startTime)} 
+                          {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
+                        </span>
                       </div>
                       {meeting.creator && (
-                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                          <User className="h-4 w-4 mr-2" />
-                          Created by {meeting.creator.name || meeting.creator.email}
+                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                          <span className="truncate">Created by {meeting.creator.name || meeting.creator.email}</span>
                         </div>
                       )}
                     </div>
                     
                     {meeting.meetingUrl && (
-                      <Button 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => window.open(meeting.meetingUrl, '_blank')}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Join Meeting
-                      </Button>
+                      <div className="space-y-2">
+                        <Button 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => window.open(meeting.meetingUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {canDeleteMeeting(meeting) ? 'Start Meeting (Host)' : 'Join Meeting'}
+                        </Button>
+                        {canDeleteMeeting(meeting) && (
+                          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                            You are the host of this meeting
+                          </p>
+                        )}
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -251,43 +292,45 @@ export default function MeetingsPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Past Meetings
             </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {pastMeetings.slice(0, 6).map((meeting) => (
                 <Card key={meeting.id} className="opacity-75">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg mb-1">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base sm:text-lg mb-1 truncate">
                           {meeting.title}
                         </CardTitle>
-                        <Badge variant="outline" className="mb-2">
+                        <Badge variant="outline" className="mb-2 text-xs">
                           Completed
                         </Badge>
                       </div>
                     </div>
                   </CardHeader>
                   
-                  <CardContent>
+                  <CardContent className="pt-0">
                     {meeting.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
                         {meeting.description}
                       </p>
                     )}
                     
                     <div className="space-y-2">
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {new Date(meeting.startTime).toLocaleDateString()}
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{new Date(meeting.startTime).toLocaleDateString()}</span>
                       </div>
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <Clock className="h-4 w-4 mr-2" />
-                        {formatDisplayTime(meeting.startTime)}
-                        {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">
+                          {formatDisplayTime(meeting.startTime)}
+                          {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
+                        </span>
                       </div>
                       {meeting.creator && (
-                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                          <User className="h-4 w-4 mr-2" />
-                          Created by {meeting.creator.name || meeting.creator.email}
+                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                          <span className="truncate">Created by {meeting.creator.name || meeting.creator.email}</span>
                         </div>
                       )}
                     </div>

@@ -77,13 +77,13 @@ export function CreateMeetingModal({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] mx-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Video className="h-5 w-5" />
+          <DialogTitle className="flex items-center space-x-2 text-base sm:text-lg">
+            <Video className="h-4 w-4 sm:h-5 sm:w-5" />
             <span>Schedule Meeting</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             Schedule a video meeting for your team.
           </DialogDescription>
         </DialogHeader>
@@ -115,7 +115,7 @@ export function CreateMeetingModal({
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="startTime" className="block text-sm font-medium mb-2">
                 Start Time
@@ -126,6 +126,7 @@ export function CreateMeetingModal({
                 value={formData.startTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
                 required
+                className="text-sm"
               />
             </div>
             
@@ -138,20 +139,22 @@ export function CreateMeetingModal({
                 type="datetime-local"
                 value={formData.endTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                className="text-sm"
               />
             </div>
           </div>
           
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
               {loading ? "Scheduling..." : "Schedule Meeting"}
             </Button>
           </div>
