@@ -159,6 +159,17 @@ export async function POST(
       }
     })
 
+    // Log the activity
+    await prisma.meetingActivity.create({
+      data: {
+        action: 'CREATED',
+        meetingTitle: meeting.title,
+        performedById: user.id,
+        workspaceId: workspace.id,
+        originalCreatorId: user.id
+      }
+    })
+
     return NextResponse.json(meeting)
   } catch (error) {
     if (error instanceof z.ZodError) {

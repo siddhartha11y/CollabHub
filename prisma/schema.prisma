@@ -74,6 +74,8 @@ model User {
   notifications Notification[]
   taskActivitiesPerformed TaskActivity[] @relation("TaskActivityPerformer")
   createdMeetings Meeting[] @relation("MeetingCreator")
+  meetingActivitiesPerformed MeetingActivity[] @relation("MeetingActivityPerformer")
+  meetingActivitiesAsOriginalCreator MeetingActivity[] @relation("MeetingActivityOriginalCreator")
 }
 
 model VerificationToken {
@@ -110,6 +112,7 @@ model Workspace {
   documentActivities DocumentActivity[]
   notifications Notification[]
   taskActivities TaskActivity[]
+  meetingActivities MeetingActivity[]
 }
 
 model WorkspaceMember {
@@ -368,6 +371,23 @@ model TaskActivity {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
+model MeetingActivity {
+  id          String   @id @default(cuid())
+  action      MeetingAction
+  meetingTitle String
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  performedById String
+  performedBy   User @relation("MeetingActivityPerformer", fields: [performedById], references: [id])
+  
+  originalCreatorId String?
+  originalCreator   User? @relation("MeetingActivityOriginalCreator", fields: [originalCreatorId], references: [id])
+  
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
 enum NotificationType {
   TASK_ASSIGNED
   TASK_STATUS_CHANGED
@@ -380,4 +400,10 @@ enum TaskAction {
   UNASSIGNED
   STATUS_CHANGED
   DELETED
+}
+
+enum MeetingAction {
+  CREATED
+  DELETED
+  UPDATED
 }

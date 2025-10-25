@@ -60,9 +60,22 @@ export function isUpcoming(date: Date | string): boolean {
 }
 
 /**
- * Converts datetime-local input value to UTC Date object
+ * Converts datetime-local input value to proper Date object
+ * The datetime-local input gives us local time, but we need to ensure it's treated as local
  */
 export function parseInputDateTime(dateTimeString: string): Date {
-  // datetime-local input gives us local time, we need to create a proper Date object
-  return new Date(dateTimeString)
+  // Create date object treating the input as local time
+  const date = new Date(dateTimeString)
+  
+  // Adjust for timezone offset to ensure we store the actual local time
+  const timezoneOffset = date.getTimezoneOffset() * 60000
+  return new Date(date.getTime() - timezoneOffset)
+}
+
+/**
+ * Converts a Date object to datetime-local input format in local timezone
+ */
+export function toLocalDateTimeString(date: Date): string {
+  const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+  return localDate.toISOString().slice(0, 16)
 }

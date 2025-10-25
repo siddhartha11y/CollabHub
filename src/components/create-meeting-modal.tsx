@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Video } from "lucide-react"
+import { parseInputDateTime } from "@/lib/date-utils"
 
 interface CreateMeetingModalProps {
   children: React.ReactNode
@@ -39,12 +40,19 @@ export function CreateMeetingModal({
     setLoading(true)
 
     try {
+      // Parse the datetime inputs properly to maintain local timezone
+      const meetingData = {
+        ...formData,
+        startTime: formData.startTime ? parseInputDateTime(formData.startTime).toISOString() : "",
+        endTime: formData.endTime ? parseInputDateTime(formData.endTime).toISOString() : undefined,
+      }
+
       const response = await fetch(`/api/workspaces/${workspaceSlug}/meetings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(meetingData),
       })
 
       if (response.ok) {

@@ -6,6 +6,22 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { 
   Plus, 
@@ -14,7 +30,9 @@ import {
   Calendar,
   Clock,
   ExternalLink,
-  User
+  User,
+  Trash2,
+  MoreVertical
 } from "lucide-react"
 import Link from "next/link"
 import { CreateMeetingModal } from "@/components/create-meeting-modal"
@@ -27,6 +45,8 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<any[]>([])
   const [workspace, setWorkspace] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [meetingToDelete, setMeetingToDelete] = useState<any>(null)
 
   useEffect(() => {
     if (!session || !params.slug) return
@@ -62,6 +82,30 @@ export default function MeetingsPage() {
     setMeetings(prev => [newMeeting, ...prev].sort((a, b) => 
       new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
     ))
+  }
+
+  const handleDeleteMeeting = async (meetingId: string) => {
+    try {
+      const response = await fetch(`/api/workspaces/${params.slug}/meetings/${meetingId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setMeetings(prev => prev.filter(meeting => meeting.id !== meetingId))
+        setDeleteDialogOpen(false)
+        setMeetingToDelete(null)
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to delete meeting')
+      }
+    } catch (error) {
+      console.error('Failed to delete meeting:', error)
+      alert('Failed to delete meeting')
+    }
+  }
+
+  const canDeleteMeeting = (meeting: any) => {
+    return meeting.creator && meeting.creator.email === session?.user?.email
   }
 
 
@@ -135,6 +179,27 @@ export default function MeetingsPage() {
                           Upcoming
                         </Badge>
                       </div>
+                      {canDeleteMeeting(meeting) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setMeetingToDelete(meeting)
+                                setDeleteDialogOpen(true)
+                              }}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Meeting
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </CardHeader>
                   
@@ -255,6 +320,27 @@ export default function MeetingsPage() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Meeting</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{meetingToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => meetingToDelete && handleDeleteMeeting(meetingToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
