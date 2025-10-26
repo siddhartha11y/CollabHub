@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { FileUploadModal } from "@/components/file-upload-modal"
+import { LargeFileUploadModal } from "@/components/large-file-upload-modal"
 import { FilePreviewModal } from "@/components/file-preview-modal"
 import { FileActionsDropdown } from "@/components/file-actions-dropdown"
 import { FileActivityLog } from "@/components/file-activity-log"
@@ -147,15 +148,27 @@ export default function FilesPage() {
                 Activity Log
               </Button>
             </FileActivityLog>
-            <FileUploadModal 
-              workspaceSlug={params.slug as string}
-              onFileUploaded={handleFileUploaded}
-            >
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Upload Files
-              </Button>
-            </FileUploadModal>
+            <div className="flex space-x-2">
+              <FileUploadModal 
+                workspaceSlug={params.slug as string}
+                onFileUploaded={handleFileUploaded}
+              >
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Small Files (5MB)
+                </Button>
+              </FileUploadModal>
+              
+              <LargeFileUploadModal 
+                workspaceSlug={params.slug as string}
+                onFileUploaded={handleFileUploaded}
+              >
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Large Files (1GB)
+                </Button>
+              </LargeFileUploadModal>
+            </div>
             <ThemeToggle />
           </div>
         </div>

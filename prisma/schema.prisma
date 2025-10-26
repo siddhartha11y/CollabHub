@@ -223,6 +223,7 @@ model File {
   url         String
   size        Int
   mimeType    String
+  storagePath String?  // Path in cloud storage for deletion
   createdAt   DateTime @default(now())
   
   // Relationships

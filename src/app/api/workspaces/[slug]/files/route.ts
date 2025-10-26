@@ -10,6 +10,7 @@ const createFileSchema = z.object({
   size: z.number().positive("File size must be positive"),
   mimeType: z.string().min(1, "MIME type is required"),
   taskId: z.string().optional(),
+  storagePath: z.string().optional(), // For cloud storage files
 })
 
 export async function GET(
@@ -108,7 +109,7 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { name, url, size, mimeType, taskId } = createFileSchema.parse(body)
+    const { name, url, size, mimeType, taskId, storagePath } = createFileSchema.parse(body)
 
     // Get user
     const user = await prisma.user.findUnique({
@@ -165,6 +166,7 @@ export async function POST(
         url,
         size,
         mimeType,
+        storagePath: storagePath || null,
         workspaceId: workspace.id,
         taskId: taskId || null,
         uploadedById: user.id // Track who uploaded the file
