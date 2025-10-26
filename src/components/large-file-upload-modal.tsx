@@ -163,7 +163,7 @@ export function LargeFileUploadModal({
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <CloudUpload className="h-5 w-5" />
@@ -177,7 +177,7 @@ export function LargeFileUploadModal({
         
         <div className="py-4">
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-4 md:p-8 text-center transition-colors ${
               dragActive 
                 ? "border-blue-500 bg-blue-50 dark:bg-blue-950" 
                 : "border-gray-300 dark:border-gray-600"
@@ -195,11 +195,11 @@ export function LargeFileUploadModal({
               className="hidden"
             />
             
-            <CloudUpload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <CloudUpload className="h-8 w-8 md:h-12 md:w-12 text-gray-400 mx-auto mb-4" />
             
             {uploading ? (
               <div>
-                <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <p className="text-sm md:text-lg font-medium text-gray-900 dark:text-white mb-2">
                   Uploading {currentFile}... {uploadProgress}%
                 </p>
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
@@ -220,16 +220,17 @@ export function LargeFileUploadModal({
               </div>
             ) : (
               <div>
-                <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <p className="text-sm md:text-lg font-medium text-gray-900 dark:text-white mb-2">
                   Drop large files here or click to browse
                 </p>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-xs md:text-sm text-gray-500 mb-4">
                   Supports files up to 50MB - larger PDFs, presentations, documents
                 </p>
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   variant="outline"
-                  className="bg-green-50 border-green-200 hover:bg-green-100"
+                  className="bg-green-50 border-green-200 hover:bg-green-100 w-full md:w-auto"
+                  size="sm"
                 >
                   <CloudUpload className="h-4 w-4 mr-2" />
                   Choose Files (50MB)
@@ -239,11 +240,13 @@ export function LargeFileUploadModal({
           </div>
         </div>
         
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-2 pt-4 border-t">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}
             disabled={uploading}
+            className="w-full md:w-auto"
+            size="sm"
           >
             {uploading ? "Uploading..." : "Close"}
           </Button>

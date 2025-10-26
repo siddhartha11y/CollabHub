@@ -123,15 +123,19 @@ export default function FilesPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Workspace</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+        <div className="container mx-auto px-4 py-4">
+          {/* Mobile Header */}
+          <div className="flex flex-col space-y-4 md:hidden">
+            <div className="flex items-center justify-between">
+              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
+                <ArrowLeft className="h-5 w-5" />
+                <span className="text-sm">Back</span>
+              </Link>
+              <ThemeToggle />
+            </div>
+            
             <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
                 <File className="h-5 w-5" />
                 <span>Files</span>
               </h1>
@@ -139,78 +143,129 @@ export default function FilesPage() {
                 {workspace?.name} • {files.length} files
               </p>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <FileActivityLog workspaceSlug={params.slug as string}>
-              <Button variant="outline" size="sm">
-                <History className="h-4 w-4 mr-2" />
-                Activity Log
-              </Button>
-            </FileActivityLog>
-            <div className="flex space-x-2">
-              <FileUploadModal 
-                workspaceSlug={params.slug as string}
-                onFileUploaded={handleFileUploaded}
-              >
-                <Button variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Small Files (5MB)
-                </Button>
-              </FileUploadModal>
+            
+            <div className="flex flex-col space-y-2">
+              <div className="flex space-x-2">
+                <FileUploadModal 
+                  workspaceSlug={params.slug as string}
+                  onFileUploaded={handleFileUploaded}
+                >
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Small (5MB)
+                  </Button>
+                </FileUploadModal>
+                
+                <LargeFileUploadModal 
+                  workspaceSlug={params.slug as string}
+                  onFileUploaded={handleFileUploaded}
+                >
+                  <Button size="sm" className="flex-1">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Large (50MB)
+                  </Button>
+                </LargeFileUploadModal>
+              </div>
               
-              <LargeFileUploadModal 
-                workspaceSlug={params.slug as string}
-                onFileUploaded={handleFileUploaded}
-              >
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Large Files (50MB)
+              <FileActivityLog workspaceSlug={params.slug as string}>
+                <Button variant="outline" size="sm" className="w-full">
+                  <History className="h-4 w-4 mr-2" />
+                  Activity Log
                 </Button>
-              </LargeFileUploadModal>
+              </FileActivityLog>
             </div>
-            <ThemeToggle />
+          </div>
+
+          {/* Desktop Header */}
+          <div className="hidden md:flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
+                <ArrowLeft className="h-5 w-5" />
+                <span>Back to Workspace</span>
+              </Link>
+              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
+                  <File className="h-5 w-5" />
+                  <span>Files</span>
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {workspace?.name} • {files.length} files
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <FileActivityLog workspaceSlug={params.slug as string}>
+                <Button variant="outline" size="sm">
+                  <History className="h-4 w-4 mr-2" />
+                  Activity Log
+                </Button>
+              </FileActivityLog>
+              <div className="flex space-x-2">
+                <FileUploadModal 
+                  workspaceSlug={params.slug as string}
+                  onFileUploaded={handleFileUploaded}
+                >
+                  <Button variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Small Files (5MB)
+                  </Button>
+                </FileUploadModal>
+                
+                <LargeFileUploadModal 
+                  workspaceSlug={params.slug as string}
+                  onFileUploaded={handleFileUploaded}
+                >
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Large Files (50MB)
+                  </Button>
+                </LargeFileUploadModal>
+              </div>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 md:py-8">
         {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
+        <div className="mb-4 md:mb-6">
+          <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search files..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
           </div>
         </div>
 
         {/* Files Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredFiles.map((file) => {
             const FileIconComponent = getFileIcon(file.mimeType)
             return (
               <Card key={file.id} className="hover:shadow-lg transition-shadow group">
-                <CardContent className="p-4">
+                <CardContent className="p-3 md:p-4">
                   <div className="flex items-start justify-between mb-3">
                     <FilePreviewModal file={file}>
                     <div 
                       data-file-id={file.id}
-                      className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-2 -m-2"
+                      className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 md:p-2 -m-1 md:-m-2"
                     >
-                      <FileIconComponent className="h-8 w-8 text-blue-600 shrink-0" />
+                      <FileIconComponent className="h-6 w-6 md:h-8 md:w-8 text-blue-600 shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-xs md:text-sm truncate">
                           {file.name}
                         </h4>
                         <p className="text-xs text-gray-500">
                           {formatFileSize(file.size)}
                         </p>
-                        <p className="text-xs text-gray-400 flex items-center space-x-1 mt-1">
+                        <p className="text-xs text-gray-400 flex items-center space-x-1 mt-1 hidden md:flex">
                           {file.uploadedBy ? (
                             <>
                               <img 
@@ -243,7 +298,7 @@ export default function FilesPage() {
                   </div>
                   
                   {file.task && (
-                    <div className="mb-3">
+                    <div className="mb-2 md:mb-3">
                       <Badge variant="secondary" className="text-xs">
                         Task: {file.task.title}
                       </Badge>
@@ -253,17 +308,19 @@ export default function FilesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-xs text-gray-500">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {new Date(file.createdAt).toLocaleDateString()}
+                      <span className="hidden sm:inline">{new Date(file.createdAt).toLocaleDateString()}</span>
+                      <span className="sm:hidden">{new Date(file.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
                     
                     <FilePreviewModal file={file}>
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="h-6 text-xs"
+                        className="h-6 text-xs px-2"
                       >
                         <Download className="h-3 w-3 mr-1" />
-                        Preview
+                        <span className="hidden sm:inline">Preview</span>
+                        <span className="sm:hidden">View</span>
                       </Button>
                     </FilePreviewModal>
                   </div>
