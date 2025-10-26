@@ -285,7 +285,7 @@ export default function MeetingsPage() {
                             </p>
                           )}
                           <p className="text-gray-500 dark:text-gray-400">
-                            Google Meet - Everyone joins the same room
+                            Professional Video Meeting - Everyone joins the same room
                           </p>
                         </div>
                       </div>

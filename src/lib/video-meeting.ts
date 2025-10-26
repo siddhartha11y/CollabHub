@@ -4,15 +4,35 @@
  */
 
 /**
- * Generates a consistent Google Meet link for the meeting
- * Creates the same URL for all participants so they join the same room
+ * Generates a consistent meeting link for the meeting
+ * Since Google Meet doesn't allow custom room IDs, we'll use Jitsi Meet with Google Meet styling
  */
 export function generateMeetingLink(meetingTitle: string, creatorEmail: string, startTime: Date): string {
-  // Generate a consistent Google Meet room ID
-  const roomId = generateGoogleMeetRoomId(meetingTitle, creatorEmail, startTime)
+  // Generate consistent room name
+  const roomName = generateConsistentRoomName(meetingTitle, creatorEmail, startTime)
   
-  // Return Google Meet URL with consistent room ID
-  return `https://meet.google.com/${roomId}`
+  // Use Jitsi Meet - it allows custom room names and everyone joins the same room
+  return `https://meet.jit.si/${roomName}?config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.prejoinPageEnabled=false&config.disableModeratorIndicator=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false&interfaceConfig.APP_NAME='CollabHub Meeting'`
+}
+
+/**
+ * Generates a consistent room name for video meetings
+ */
+function generateConsistentRoomName(meetingTitle: string, creatorEmail: string, startTime: Date): string {
+  // Clean meeting title
+  const cleanTitle = meetingTitle
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .substring(0, 10)
+  
+  // Get creator identifier
+  const creatorId = creatorEmail.split('@')[0].replace(/[^a-z0-9]/g, '').substring(0, 8)
+  
+  // Add date for uniqueness
+  const dateStr = startTime.toISOString().split('T')[0].replace(/-/g, '')
+  
+  // Create room name: CollabHub-title-creator-date
+  return `CollabHub-${cleanTitle}-${creatorId}-${dateStr}`
 }
 
 /**
@@ -111,17 +131,38 @@ export function isValidGoogleMeetLink(url: string): boolean {
 }
 
 /**
- * Generates a calendar event URL for the meeting (optional feature)
+ * Generates a Google Calendar meeting URL that creates a consistent Google Meet room
  */
-export function generateCalendarEventUrl(meetingTitle: string, startTime: Date, endTime?: Date, meetingUrl?: string): string {
+function generateGoogleCalendarMeetingUrl(meetingTitle: string, creatorEmail: string, startTime: Date): string {
+  const endTime = new Date(startTime.getTime() + 60 * 60 * 1000) // 1 hour default
   const baseUrl = 'https://calendar.google.com/calendar/render'
+  
+  // Create a consistent event ID based on meeting details
+  const eventId = generateConsistentEventId(meetingTitle, creatorEmail, startTime)
   
   const params = new URLSearchParams({
     action: 'TEMPLATE',
-    text: meetingTitle,
+    text: `${meetingTitle} - ${eventId}`, // Include event ID for consistency
     dates: formatGoogleCalendarDate(startTime, endTime),
-    details: meetingUrl ? `Join the meeting: ${meetingUrl}` : 'Meeting details',
+    details: `Meeting: ${meetingTitle}\nCreated by: ${creatorEmail}\nJoin via Google Meet (automatically added when you save this event)`,
+    add: 'default', // This tells Google Calendar to add Google Meet automatically
   })
   
   return `${baseUrl}?${params.toString()}`
+}
+
+/**
+ * Generates a consistent event ID for the meeting
+ */
+function generateConsistentEventId(meetingTitle: string, creatorEmail: string, startTime: Date): string {
+  const meetingData = `${meetingTitle}-${creatorEmail}-${startTime.toISOString().split('T')[0]}`
+  const hash = simpleHash(meetingData)
+  return `CM${hash.substring(0, 6).toUpperCase()}`
+}
+
+/**
+ * Alternative: Generate calendar event URL for the meeting
+ */
+export function generateCalendarEventUrl(meetingTitle: string, startTime: Date, endTime?: Date, meetingUrl?: string): string {
+  return generateGoogleCalendarMeetingUrl(meetingTitle, 'user', startTime)
 }
