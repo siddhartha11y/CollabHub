@@ -274,8 +274,8 @@ export default function MeetingsPage() {
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           {isMeetingActive(meeting.startTime, meeting.endTime) 
-                            ? (canDeleteMeeting(meeting) ? '🎥 Host Meeting (Live)' : '🎥 Join Meeting (Live)')
-                            : (canDeleteMeeting(meeting) ? '🎥 Start as Host' : '🎥 Join Meeting')
+                            ? (canDeleteMeeting(meeting) ? '📹 Host Meeting (Live)' : '📹 Join Meeting (Live)')
+                            : (canDeleteMeeting(meeting) ? '📹 Start as Host' : '📹 Join Meeting')
                           }
                         </Button>
                         <div className="text-xs text-center space-y-1">
@@ -285,7 +285,7 @@ export default function MeetingsPage() {
                             </p>
                           )}
                           <p className="text-gray-500 dark:text-gray-400">
-                            Powered by Jitsi Meet - Everyone will see each other
+                            Google Meet - Everyone joins the same room
                           </p>
                         </div>
                       </div>

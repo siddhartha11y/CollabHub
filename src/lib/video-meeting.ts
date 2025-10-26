@@ -1,65 +1,76 @@
 /**
- * Video Meeting Integration using Jitsi Meet
- * Jitsi Meet provides reliable, free video conferencing with proper room sharing
+ * Video Meeting Integration using Google Meet
+ * Generates consistent Google Meet URLs so everyone joins the same room
  */
 
 /**
- * Generates a Jitsi Meet link for the meeting
- * Creates a consistent room that all participants can join
+ * Generates a consistent Google Meet link for the meeting
+ * Creates the same URL for all participants so they join the same room
  */
 export function generateMeetingLink(meetingTitle: string, creatorEmail: string, startTime: Date): string {
-  // Create a unique but consistent room name
-  const roomName = generateRoomName(meetingTitle, creatorEmail, startTime)
+  // Generate a consistent Google Meet room ID
+  const roomId = generateGoogleMeetRoomId(meetingTitle, creatorEmail, startTime)
   
-  // Use Jitsi Meet - free, reliable, and works perfectly for team meetings
-  return `https://meet.jit.si/${roomName}`
+  // Return Google Meet URL with consistent room ID
+  return `https://meet.google.com/${roomId}`
 }
 
 /**
- * Generates a unique room name for the meeting
- * Same meeting always gets the same room name
+ * Generates a consistent Google Meet room ID
+ * Same meeting details always generate the same room ID
  */
-function generateRoomName(meetingTitle: string, creatorEmail: string, startTime: Date): string {
-  // Clean the meeting title for URL
-  const cleanTitle = meetingTitle
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-    .substring(0, 10)
+function generateGoogleMeetRoomId(meetingTitle: string, creatorEmail: string, startTime: Date): string {
+  // Create a deterministic hash from meeting details
+  const meetingData = `${meetingTitle}-${creatorEmail}-${startTime.toISOString().split('T')[0]}`
+  const hash = simpleHash(meetingData)
   
-  // Get creator identifier
-  const creatorId = creatorEmail.split('@')[0].replace(/[^a-z0-9]/g, '').substring(0, 8)
+  // Convert to Google Meet room format (xxx-xxxx-xxx)
+  const roomId = formatAsGoogleMeetRoomId(hash)
+  return roomId
+}
+
+/**
+ * Simple hash function for consistent room ID generation
+ */
+function simpleHash(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(36).padStart(8, '0')
+}
+
+/**
+ * Format hash as Google Meet room ID (xxx-xxxx-xxx)
+ */
+function formatAsGoogleMeetRoomId(hash: string): string {
+  // Ensure we have enough characters
+  const padded = (hash + 'abcdefghijk').substring(0, 10)
   
-  // Add date for uniqueness
-  const dateStr = startTime.toISOString().split('T')[0].replace(/-/g, '')
-  
-  // Create room name: title-creator-date
-  return `${cleanTitle}-${creatorId}-${dateStr}`
+  // Format as Google Meet room ID
+  return `${padded.substring(0, 3)}-${padded.substring(3, 7)}-${padded.substring(7, 10)}`
 }
 
 /**
  * Alternative: Generate Google Meet link (keeping for backward compatibility)
  */
 export function generateGoogleMeetLink(meetingTitle: string, startTime: Date, endTime?: Date): string {
-  // For now, redirect to Jitsi Meet which actually works
-  const roomName = generateRoomName(meetingTitle, 'user', startTime)
-  return `https://meet.jit.si/${roomName}`
+  // Use the same consistent room generation
+  const roomId = generateGoogleMeetRoomId(meetingTitle, 'default', startTime)
+  return `https://meet.google.com/${roomId}`
 }
 
 /**
- * Get meeting room configuration for Jitsi
+ * Get meeting room information for Google Meet
  */
-export function getMeetingConfig(meetingTitle: string, creatorName: string, isHost: boolean) {
+export function getMeetingConfig(meetingTitle: string, creatorEmail: string, startTime: Date) {
+  const roomId = generateGoogleMeetRoomId(meetingTitle, creatorEmail, startTime)
   return {
-    roomName: generateRoomName(meetingTitle, creatorName, new Date()),
-    config: {
-      startWithAudioMuted: !isHost,
-      startWithVideoMuted: !isHost,
-      enableWelcomePage: false,
-      enableClosePage: false,
-      prejoinPageEnabled: false,
-      disableModeratorIndicator: false,
-      moderatorPassword: isHost ? 'host123' : undefined
-    }
+    roomId,
+    meetingUrl: `https://meet.google.com/${roomId}`,
+    isGoogleMeet: true
   }
 }
 
@@ -81,25 +92,10 @@ function formatDateForGoogle(date: Date): string {
 }
 
 /**
- * Creates a direct Google Meet link with proper room ID
+ * Creates a direct Google Meet link with consistent room ID
  */
-export function createDirectMeetLink(meetingTitle: string, creatorEmail: string): string {
-  // Generate a unique room ID based on creator and title
-  const roomId = generateUniqueRoomId(meetingTitle, creatorEmail)
-  return `https://meet.google.com/${roomId}`
-}
-
-/**
- * Generates a unique room ID for consistent meeting rooms
- */
-function generateUniqueRoomId(title: string, creatorEmail: string): string {
-  const titlePart = title.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 4)
-  const emailPart = creatorEmail.split('@')[0].replace(/[^a-z0-9]/g, '').substring(0, 4)
-  const timestamp = Date.now().toString(36).substring(-4)
-  
-  // Format as Google Meet room ID (xxx-xxxx-xxx)
-  const combined = (titlePart + emailPart + timestamp).substring(0, 10)
-  return `${combined.substring(0, 3)}-${combined.substring(3, 7)}-${combined.substring(7, 10)}`
+export function createDirectMeetLink(meetingTitle: string, creatorEmail: string, startTime: Date): string {
+  return generateMeetingLink(meetingTitle, creatorEmail, startTime)
 }
 
 /**
