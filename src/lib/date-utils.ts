@@ -73,7 +73,24 @@ export function isMeetingUpcoming(startTime: Date | string, endTime?: Date | str
 }
 
 /**
- * Checks if a meeting is currently active (started but not ended)
+ * Checks if a meeting is currently live (started but not ended)
+ */
+export function isMeetingLive(startTime: Date | string, endTime?: Date | string): boolean {
+  const now = new Date()
+  const startDate = typeof startTime === 'string' ? new Date(startTime) : startTime
+  
+  if (endTime) {
+    const endDate = typeof endTime === 'string' ? new Date(endTime) : endTime
+    return startDate <= now && now <= endDate
+  } else {
+    // If no end time, assume 1 hour duration for live status
+    const assumedEndTime = new Date(startDate.getTime() + 60 * 60 * 1000) // 1 hour
+    return startDate <= now && now <= assumedEndTime
+  }
+}
+
+/**
+ * Checks if a meeting is currently active (includes buffer time)
  */
 export function isMeetingActive(startTime: Date | string, endTime?: Date | string): boolean {
   const now = new Date()
@@ -90,6 +107,19 @@ export function isMeetingActive(startTime: Date | string, endTime?: Date | strin
     // If no end time, assume 2 hour duration
     const assumedEndTime = new Date(startDate.getTime() + 2 * 60 * 60 * 1000)
     return startWithBuffer <= now && now <= assumedEndTime
+  }
+}
+
+/**
+ * Gets the meeting status: 'upcoming', 'live', or 'past'
+ */
+export function getMeetingStatus(startTime: Date | string, endTime?: Date | string): 'upcoming' | 'live' | 'past' {
+  if (isMeetingPast(startTime, endTime)) {
+    return 'past'
+  } else if (isMeetingLive(startTime, endTime)) {
+    return 'live'
+  } else {
+    return 'upcoming'
   }
 }
 

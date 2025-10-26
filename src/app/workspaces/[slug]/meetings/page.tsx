@@ -36,7 +36,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { CreateMeetingModal } from "@/components/create-meeting-modal"
-import { formatDisplayTime, formatDisplayDateTime, isMeetingUpcoming, isMeetingPast, isMeetingActive } from "@/lib/date-utils"
+import { formatDisplayTime, formatDisplayDateTime, isMeetingUpcoming, isMeetingPast, isMeetingActive, isMeetingLive, getMeetingStatus } from "@/lib/date-utils"
 
 export default function MeetingsPage() {
   const { data: session } = useSession()
@@ -76,6 +76,10 @@ export default function MeetingsPage() {
     }
 
     fetchData()
+
+    // Auto-refresh every 30 seconds to update meeting statuses
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
   }, [session, params.slug])
 
   const handleMeetingCreated = (newMeeting: any) => {
@@ -110,8 +114,10 @@ export default function MeetingsPage() {
 
 
 
-  const upcomingMeetings = meetings.filter(meeting => isMeetingUpcoming(meeting.startTime, meeting.endTime))
-  const pastMeetings = meetings.filter(meeting => isMeetingPast(meeting.startTime, meeting.endTime))
+  // Categorize meetings by status
+  const upcomingMeetings = meetings.filter(meeting => getMeetingStatus(meeting.startTime, meeting.endTime) === 'upcoming')
+  const liveMeetings = meetings.filter(meeting => getMeetingStatus(meeting.startTime, meeting.endTime) === 'live')
+  const pastMeetings = meetings.filter(meeting => getMeetingStatus(meeting.startTime, meeting.endTime) === 'past')
 
   if (loading) {
     return (
@@ -192,6 +198,106 @@ export default function MeetingsPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Live Meetings */}
+        {liveMeetings.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+              Live Meetings ({liveMeetings.length})
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {liveMeetings.map((meeting) => (
+                <Card key={meeting.id} className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base sm:text-lg mb-1 truncate text-red-900 dark:text-red-100">
+                          {meeting.title}
+                        </CardTitle>
+                        <Badge variant="destructive" className="mb-2 text-xs animate-pulse">
+                          🔴 Live Now
+                        </Badge>
+                      </div>
+                      {canDeleteMeeting(meeting) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="flex-shrink-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setMeetingToDelete(meeting)
+                                setDeleteDialogOpen(true)
+                              }}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              End & Delete Meeting
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    {meeting.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                        {meeting.description}
+                      </p>
+                    )}
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2 shrink-0" />
+                        <span className="truncate">{new Date(meeting.startTime).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-2 shrink-0" />
+                        <span className="truncate">
+                          {formatDisplayTime(meeting.startTime)} 
+                          {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
+                        </span>
+                      </div>
+                      {meeting.creator && (
+                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 mr-2 shrink-0" />
+                          <span className="truncate">Created by {meeting.creator.name || meeting.creator.email}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {meeting.meetingUrl && (
+                      <div className="space-y-2">
+                        <Button 
+                          size="sm" 
+                          className="w-full bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                          onClick={() => window.open(meeting.meetingUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {canDeleteMeeting(meeting) ? '🔴 Join as Host (LIVE)' : '🔴 Join Meeting (LIVE)'}
+                        </Button>
+                        <div className="text-xs text-center space-y-1">
+                          {canDeleteMeeting(meeting) && (
+                            <p className="text-red-600 dark:text-red-400 font-medium">
+                              ⭐ You are hosting this live meeting
+                            </p>
+                          )}
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Meeting is currently active
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Upcoming Meetings */}
         {upcomingMeetings.length > 0 && (
           <div className="mb-8">
@@ -207,11 +313,8 @@ export default function MeetingsPage() {
                         <CardTitle className="text-base sm:text-lg mb-1 truncate">
                           {meeting.title}
                         </CardTitle>
-                        <Badge 
-                          variant={isMeetingActive(meeting.startTime, meeting.endTime) ? "default" : "secondary"} 
-                          className="mb-2 text-xs"
-                        >
-                          {isMeetingActive(meeting.startTime, meeting.endTime) ? "Live Now" : "Upcoming"}
+                        <Badge variant="secondary" className="mb-2 text-xs">
+                          📅 Upcoming
                         </Badge>
                       </div>
                       {canDeleteMeeting(meeting) && (
@@ -269,14 +372,11 @@ export default function MeetingsPage() {
                       <div className="space-y-2">
                         <Button 
                           size="sm" 
-                          className={`w-full ${isMeetingActive(meeting.startTime, meeting.endTime) ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                          className="w-full bg-blue-600 hover:bg-blue-700"
                           onClick={() => window.open(meeting.meetingUrl, '_blank')}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
-                          {isMeetingActive(meeting.startTime, meeting.endTime) 
-                            ? (canDeleteMeeting(meeting) ? '📹 Host Meeting (Live)' : '📹 Join Meeting (Live)')
-                            : (canDeleteMeeting(meeting) ? '📹 Start as Host' : '📹 Join Meeting')
-                          }
+                          {canDeleteMeeting(meeting) ? '📹 Start as Host' : '📹 Join Meeting'}
                         </Button>
                         <div className="text-xs text-center space-y-1">
                           {canDeleteMeeting(meeting) && (
@@ -301,11 +401,11 @@ export default function MeetingsPage() {
         {pastMeetings.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Past Meetings
+              Past Meetings ({pastMeetings.length})
             </h2>
             <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {pastMeetings.slice(0, 6).map((meeting) => (
-                <Card key={meeting.id} className="opacity-75">
+              {pastMeetings.slice(0, 12).map((meeting) => (
+                <Card key={meeting.id} className="opacity-75 border-gray-200 dark:border-gray-700">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -313,9 +413,30 @@ export default function MeetingsPage() {
                           {meeting.title}
                         </CardTitle>
                         <Badge variant="outline" className="mb-2 text-xs">
-                          Completed
+                          ✅ Completed
                         </Badge>
                       </div>
+                      {canDeleteMeeting(meeting) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="shrink-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setMeetingToDelete(meeting)
+                                setDeleteDialogOpen(true)
+                              }}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Meeting Record
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </CardHeader>
                   
@@ -326,13 +447,13 @@ export default function MeetingsPage() {
                       </p>
                     )}
                     
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-4">
                       <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2 shrink-0" />
                         <span className="truncate">{new Date(meeting.startTime).toLocaleDateString()}</span>
                       </div>
                       <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-2 shrink-0" />
                         <span className="truncate">
                           {formatDisplayTime(meeting.startTime)}
                           {meeting.endTime && ` - ${formatDisplayTime(meeting.endTime)}`}
@@ -340,11 +461,19 @@ export default function MeetingsPage() {
                       </div>
                       {meeting.creator && (
                         <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                          <User className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 mr-2 shrink-0" />
                           <span className="truncate">Created by {meeting.creator.name || meeting.creator.email}</span>
                         </div>
                       )}
                     </div>
+
+                    {canDeleteMeeting(meeting) && (
+                      <div className="text-xs text-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                          You can delete this meeting record
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
