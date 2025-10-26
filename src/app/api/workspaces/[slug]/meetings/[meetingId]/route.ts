@@ -90,16 +90,8 @@ export async function DELETE(
       }
     })
 
-    // Log the activity
-    await prisma.meetingActivity.create({
-      data: {
-        action: 'DELETED',
-        meetingTitle: meeting.title,
-        performedById: user.id,
-        workspaceId: workspace.id,
-        originalCreatorId: meeting.creatorId
-      }
-    })
+    // TODO: Log the activity once MeetingActivity model is available in production
+    // This is temporarily disabled to prevent deployment issues
 
     return NextResponse.json({ success: true })
   } catch (error) {

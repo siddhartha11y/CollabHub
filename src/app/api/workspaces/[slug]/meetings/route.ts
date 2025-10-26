@@ -159,16 +159,8 @@ export async function POST(
       }
     })
 
-    // Log the activity
-    await prisma.meetingActivity.create({
-      data: {
-        action: 'CREATED',
-        meetingTitle: meeting.title,
-        performedById: user.id,
-        workspaceId: workspace.id,
-        originalCreatorId: user.id
-      }
-    })
+    // TODO: Log the activity once MeetingActivity model is available in production
+    // This is temporarily disabled to prevent deployment issues
 
     return NextResponse.json(meeting)
   } catch (error) {

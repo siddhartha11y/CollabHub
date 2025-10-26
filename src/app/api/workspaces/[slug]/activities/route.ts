@@ -48,9 +48,10 @@ export async function GET(
       )
     }
 
-    // Get all activities for this workspace
-    const [meetingActivities, taskActivities, fileActivities, documentActivities] = await Promise.all([
-      prisma.meetingActivity.findMany({
+    // Get all activities for this workspace (handle missing models gracefully)
+    let meetingActivities = []
+    try {
+      meetingActivities = await prisma.meetingActivity.findMany({
         where: { workspaceId: workspace.id },
         include: {
           performedBy: {
@@ -61,7 +62,12 @@ export async function GET(
           }
         },
         orderBy: { createdAt: 'desc' }
-      }),
+      })
+    } catch (error) {
+      console.warn("MeetingActivity model not available:", error)
+    }
+
+    const [taskActivities, fileActivities, documentActivities] = await Promise.all([
       prisma.taskActivity.findMany({
         where: { workspaceId: workspace.id },
         include: {
