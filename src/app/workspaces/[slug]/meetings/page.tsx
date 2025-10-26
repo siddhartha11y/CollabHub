@@ -269,20 +269,25 @@ export default function MeetingsPage() {
                       <div className="space-y-2">
                         <Button 
                           size="sm" 
-                          className={`w-full ${isMeetingActive(meeting.startTime, meeting.endTime) ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                          className={`w-full ${isMeetingActive(meeting.startTime, meeting.endTime) ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                           onClick={() => window.open(meeting.meetingUrl, '_blank')}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           {isMeetingActive(meeting.startTime, meeting.endTime) 
-                            ? (canDeleteMeeting(meeting) ? 'Join as Host (Live)' : 'Join Meeting (Live)')
-                            : (canDeleteMeeting(meeting) ? 'Start Meeting (Host)' : 'Join Meeting')
+                            ? (canDeleteMeeting(meeting) ? '🎥 Host Meeting (Live)' : '🎥 Join Meeting (Live)')
+                            : (canDeleteMeeting(meeting) ? '🎥 Start as Host' : '🎥 Join Meeting')
                           }
                         </Button>
-                        {canDeleteMeeting(meeting) && (
-                          <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                            You are the host of this meeting
+                        <div className="text-xs text-center space-y-1">
+                          {canDeleteMeeting(meeting) && (
+                            <p className="text-blue-600 dark:text-blue-400 font-medium">
+                              ⭐ You are the host
+                            </p>
+                          )}
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Powered by Jitsi Meet - Everyone will see each other
                           </p>
-                        )}
+                        </div>
                       </div>
                     )}
                   </CardContent>

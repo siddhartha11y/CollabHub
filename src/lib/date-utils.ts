@@ -53,13 +53,14 @@ export function isMeetingPast(startTime: Date | string, endTime?: Date | string)
   const now = new Date()
   
   if (endTime) {
-    // If we have an end time, use that
+    // If we have an end time, add 15 minutes buffer
     const endDate = typeof endTime === 'string' ? new Date(endTime) : endTime
-    return endDate < now
+    const endWithBuffer = new Date(endDate.getTime() + 15 * 60 * 1000) // +15 minutes
+    return endWithBuffer < now
   } else {
-    // If no end time, assume 1 hour duration
+    // If no end time, assume 2 hour duration (more generous)
     const startDate = typeof startTime === 'string' ? new Date(startTime) : startTime
-    const assumedEndTime = new Date(startDate.getTime() + 60 * 60 * 1000) // +1 hour
+    const assumedEndTime = new Date(startDate.getTime() + 2 * 60 * 60 * 1000) // +2 hours
     return assumedEndTime < now
   }
 }
@@ -78,13 +79,17 @@ export function isMeetingActive(startTime: Date | string, endTime?: Date | strin
   const now = new Date()
   const startDate = typeof startTime === 'string' ? new Date(startTime) : startTime
   
+  // Meeting is active if it started within the last 15 minutes or is currently running
+  const startWithBuffer = new Date(startDate.getTime() - 15 * 60 * 1000) // -15 minutes
+  
   if (endTime) {
     const endDate = typeof endTime === 'string' ? new Date(endTime) : endTime
-    return startDate <= now && now <= endDate
+    const endWithBuffer = new Date(endDate.getTime() + 15 * 60 * 1000) // +15 minutes
+    return startWithBuffer <= now && now <= endWithBuffer
   } else {
-    // If no end time, assume 1 hour duration
-    const assumedEndTime = new Date(startDate.getTime() + 60 * 60 * 1000)
-    return startDate <= now && now <= assumedEndTime
+    // If no end time, assume 2 hour duration
+    const assumedEndTime = new Date(startDate.getTime() + 2 * 60 * 60 * 1000)
+    return startWithBuffer <= now && now <= assumedEndTime
   }
 }
 

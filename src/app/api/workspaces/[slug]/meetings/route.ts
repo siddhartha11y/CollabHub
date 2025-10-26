@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
-import { generateGoogleMeetLink } from "@/lib/google-meet"
+import { generateMeetingLink } from "@/lib/video-meeting"
 
 const createMeetingSchema = z.object({
   title: z.string().min(1, "Meeting title is required"),
@@ -134,8 +134,8 @@ export async function POST(
       )
     }
 
-    // Generate direct Google Meet link that creates a new room
-    const meetingUrl = generateGoogleMeetLink(title, startTime, endTime)
+    // Generate Jitsi Meet link - reliable video conferencing with proper room sharing
+    const meetingUrl = generateMeetingLink(title, user.email, startTime)
 
     // Create meeting
     const meeting = await prisma.meeting.create({
