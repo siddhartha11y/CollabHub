@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Upload, File, X, CloudUpload, CheckCircle, AlertCircle } from "lucide-react"
 import { createClientComponentClient } from "@/lib/supabase"
+import { useSession } from "next-auth/react"
 
 interface LargeFileUploadModalProps {
   children: React.ReactNode
@@ -26,6 +27,7 @@ export function LargeFileUploadModal({
   taskId,
   onFileUploaded 
 }: LargeFileUploadModalProps) {
+  const { data: session } = useSession()
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -35,6 +37,10 @@ export function LargeFileUploadModal({
   const supabase = createClientComponentClient()
 
   const uploadLargeFile = async (file: File): Promise<void> => {
+    if (!session?.user) {
+      throw new Error('You must be logged in to upload files')
+    }
+
     setCurrentFile(file.name)
     
     // Generate unique file path
@@ -49,16 +55,15 @@ export function LargeFileUploadModal({
         .from('files')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            const percent = (progress.loaded / progress.total) * 100
-            setUploadProgress(Math.round(percent))
-          }
+          upsert: false
         })
 
       if (error) {
         throw new Error(`Storage upload failed: ${error.message}`)
       }
+
+      // Simulate progress for better UX
+      setUploadProgress(90)
 
       // Get public URL
       const { data: urlData } = supabase.storage
@@ -84,7 +89,8 @@ export function LargeFileUploadModal({
       if (!response.ok) {
         // If database save fails, clean up the uploaded file
         await supabase.storage.from('files').remove([filePath])
-        throw new Error('Failed to save file metadata')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to save file metadata`)
       }
 
       const result = await response.json()
