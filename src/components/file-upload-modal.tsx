@@ -31,6 +31,58 @@ export function FileUploadModal({
   const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const uploadFileInChunks = async (file: File): Promise<void> => {
+    const CHUNK_SIZE = 3 * 1024 * 1024 // 3MB chunks (well under Vercel's 4.5MB limit)
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
+    const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * CHUNK_SIZE
+      const end = Math.min(start + CHUNK_SIZE, file.size)
+      const chunk = file.slice(start, end)
+
+      const formData = new FormData()
+      formData.append('chunk', chunk)
+      formData.append('chunkIndex', chunkIndex.toString())
+      formData.append('totalChunks', totalChunks.toString())
+      formData.append('uploadId', uploadId)
+      formData.append('fileName', file.name)
+      formData.append('fileSize', file.size.toString())
+      formData.append('mimeType', file.type || 'application/octet-stream')
+      formData.append('workspaceSlug', workspaceSlug)
+      if (taskId) {
+        formData.append('taskId', taskId)
+      }
+
+      try {
+        const response = await fetch(`/api/workspaces/${workspaceSlug}/files/upload-chunk`, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Upload failed')
+        }
+
+        const result = await response.json()
+        
+        // Update progress
+        const progress = ((chunkIndex + 1) / totalChunks) * 100
+        setUploadProgress(progress)
+
+        // If this was the last chunk, the file is complete
+        if (result.fileComplete) {
+          onFileUploaded(result.file)
+        }
+
+      } catch (error) {
+        console.error(`Failed to upload chunk ${chunkIndex}:`, error)
+        throw error
+      }
+    }
+  }
+
   const handleFiles = async (files: FileList) => {
     if (files.length === 0) return
 
@@ -39,67 +91,18 @@ export function FileUploadModal({
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       
-      // Validate file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 50MB.`)
+      // Validate file size (max 100MB)
+      if (file.size > 100 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size is 100MB.`)
         continue
       }
 
       try {
-        // Use FormData for proper file upload
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('workspaceSlug', workspaceSlug)
-        if (taskId) {
-          formData.append('taskId', taskId)
-        }
-
-        // Upload with progress tracking
-        const xhr = new XMLHttpRequest()
-        
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const progress = (e.loaded / e.total) * 100
-            setUploadProgress(progress)
-          }
-        })
-
-        xhr.addEventListener('load', async () => {
-          if (xhr.status === 200) {
-            try {
-              const response = JSON.parse(xhr.responseText)
-              onFileUploaded(response)
-            } catch (error) {
-              console.error('Failed to parse response:', error)
-              alert(`Failed to upload ${file.name}: Invalid response`)
-            }
-          } else {
-            try {
-              const error = JSON.parse(xhr.responseText)
-              alert(`Failed to upload ${file.name}: ${error.error}`)
-            } catch {
-              alert(`Failed to upload ${file.name}: Server error`)
-            }
-          }
-        })
-
-        xhr.addEventListener('error', () => {
-          alert(`Failed to upload ${file.name}: Network error`)
-        })
-
-        // Send the request
-        xhr.open('POST', `/api/workspaces/${workspaceSlug}/files/upload`)
-        xhr.send(formData)
-
-        // Wait for completion
-        await new Promise((resolve, reject) => {
-          xhr.addEventListener('load', resolve)
-          xhr.addEventListener('error', reject)
-        })
-
+        setUploadProgress(0)
+        await uploadFileInChunks(file)
       } catch (error) {
         console.error("Failed to upload file:", error)
-        alert(`Failed to upload ${file.name}`)
+        alert(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     }
     
@@ -149,7 +152,7 @@ export function FileUploadModal({
           </DialogTitle>
           <DialogDescription>
             Upload files to {taskId ? "this task" : "the workspace"}. 
-            Maximum file size: 50MB per file.
+            Maximum file size: 100MB per file.
           </DialogDescription>
         </DialogHeader>
         
@@ -181,12 +184,21 @@ export function FileUploadModal({
                 <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   Uploading files... {Math.round(uploadProgress)}%
                 </p>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    className="bg-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-center" 
                     style={{ width: `${uploadProgress}%` }}
-                  ></div>
+                  >
+                    {uploadProgress > 10 && (
+                      <span className="text-xs text-white font-medium">
+                        {Math.round(uploadProgress)}%
+                      </span>
+                    )}
+                  </div>
                 </div>
+                <p className="text-sm text-gray-500">
+                  Large files are uploaded in chunks for reliability
+                </p>
               </div>
             ) : (
               <div>
