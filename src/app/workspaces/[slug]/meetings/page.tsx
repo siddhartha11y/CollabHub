@@ -36,7 +36,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { CreateMeetingModal } from "@/components/create-meeting-modal"
-import { formatDisplayTime, formatDisplayDateTime, isUpcoming, isPast } from "@/lib/date-utils"
+import { formatDisplayTime, formatDisplayDateTime, isMeetingUpcoming, isMeetingPast, isMeetingActive } from "@/lib/date-utils"
 
 export default function MeetingsPage() {
   const { data: session } = useSession()
@@ -110,8 +110,8 @@ export default function MeetingsPage() {
 
 
 
-  const upcomingMeetings = meetings.filter(meeting => isUpcoming(meeting.startTime))
-  const pastMeetings = meetings.filter(meeting => isPast(meeting.startTime))
+  const upcomingMeetings = meetings.filter(meeting => isMeetingUpcoming(meeting.startTime, meeting.endTime))
+  const pastMeetings = meetings.filter(meeting => isMeetingPast(meeting.startTime, meeting.endTime))
 
   if (loading) {
     return (
@@ -207,8 +207,11 @@ export default function MeetingsPage() {
                         <CardTitle className="text-base sm:text-lg mb-1 truncate">
                           {meeting.title}
                         </CardTitle>
-                        <Badge variant="secondary" className="mb-2 text-xs">
-                          Upcoming
+                        <Badge 
+                          variant={isMeetingActive(meeting.startTime, meeting.endTime) ? "default" : "secondary"} 
+                          className="mb-2 text-xs"
+                        >
+                          {isMeetingActive(meeting.startTime, meeting.endTime) ? "Live Now" : "Upcoming"}
                         </Badge>
                       </div>
                       {canDeleteMeeting(meeting) && (
@@ -266,11 +269,14 @@ export default function MeetingsPage() {
                       <div className="space-y-2">
                         <Button 
                           size="sm" 
-                          className="w-full"
+                          className={`w-full ${isMeetingActive(meeting.startTime, meeting.endTime) ? 'bg-green-600 hover:bg-green-700' : ''}`}
                           onClick={() => window.open(meeting.meetingUrl, '_blank')}
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
-                          {canDeleteMeeting(meeting) ? 'Start Meeting (Host)' : 'Join Meeting'}
+                          {isMeetingActive(meeting.startTime, meeting.endTime) 
+                            ? (canDeleteMeeting(meeting) ? 'Join as Host (Live)' : 'Join Meeting (Live)')
+                            : (canDeleteMeeting(meeting) ? 'Start Meeting (Host)' : 'Join Meeting')
+                          }
                         </Button>
                         {canDeleteMeeting(meeting) && (
                           <p className="text-xs text-center text-gray-500 dark:text-gray-400">

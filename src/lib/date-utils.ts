@@ -46,16 +46,56 @@ export function formatDisplayDateTime(date: Date | string): string {
 }
 
 /**
- * Checks if a date is in the past
+ * Checks if a meeting is in the past (completely finished)
+ * A meeting is only "past" if it has ended, not just started
+ */
+export function isMeetingPast(startTime: Date | string, endTime?: Date | string): boolean {
+  const now = new Date()
+  
+  if (endTime) {
+    // If we have an end time, use that
+    const endDate = typeof endTime === 'string' ? new Date(endTime) : endTime
+    return endDate < now
+  } else {
+    // If no end time, assume 1 hour duration
+    const startDate = typeof startTime === 'string' ? new Date(startTime) : startTime
+    const assumedEndTime = new Date(startDate.getTime() + 60 * 60 * 1000) // +1 hour
+    return assumedEndTime < now
+  }
+}
+
+/**
+ * Checks if a meeting is upcoming (not finished yet)
+ */
+export function isMeetingUpcoming(startTime: Date | string, endTime?: Date | string): boolean {
+  return !isMeetingPast(startTime, endTime)
+}
+
+/**
+ * Checks if a meeting is currently active (started but not ended)
+ */
+export function isMeetingActive(startTime: Date | string, endTime?: Date | string): boolean {
+  const now = new Date()
+  const startDate = typeof startTime === 'string' ? new Date(startTime) : startTime
+  
+  if (endTime) {
+    const endDate = typeof endTime === 'string' ? new Date(endTime) : endTime
+    return startDate <= now && now <= endDate
+  } else {
+    // If no end time, assume 1 hour duration
+    const assumedEndTime = new Date(startDate.getTime() + 60 * 60 * 1000)
+    return startDate <= now && now <= assumedEndTime
+  }
+}
+
+/**
+ * Legacy functions for backward compatibility
  */
 export function isPast(date: Date | string): boolean {
   const dateObj = typeof date === 'string' ? new Date(date) : date
   return dateObj < new Date()
 }
 
-/**
- * Checks if a date is upcoming (in the future)
- */
 export function isUpcoming(date: Date | string): boolean {
   return !isPast(date)
 }

@@ -1,31 +1,52 @@
 /**
  * Google Meet integration utilities
- * This provides direct Google Meet room creation
+ * This creates new Google Meet rooms that work immediately
  */
 
 /**
- * Generates a direct Google Meet link
- * Creates a new Google Meet room that can be joined immediately
+ * Generates a direct Google Meet link that creates a new room
+ * Uses Google Meet's "new" endpoint which creates an instant room
  */
 export function generateGoogleMeetLink(meetingTitle: string, startTime: Date, endTime?: Date): string {
-  // Generate a unique meeting ID based on title and time
-  const meetingId = generateMeetingId(meetingTitle, startTime)
-  
-  // Return direct Google Meet link
-  return `https://meet.google.com/${meetingId}`
+  // Use Google Meet's instant room creation
+  // This creates a new room every time, which is what we want
+  return 'https://meet.google.com/new'
 }
 
 /**
- * Generates a unique meeting ID for Google Meet
+ * Alternative: Generate a consistent meeting room based on meeting details
+ * This creates the same room ID for the same meeting
  */
-function generateMeetingId(title: string, startTime: Date): string {
-  // Create a deterministic ID based on title and time
-  const titleHash = title.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 8)
-  const timeHash = startTime.getTime().toString(36).substring(0, 6)
+export function generateConsistentMeetLink(meetingTitle: string, creatorEmail: string, startTime: Date): string {
+  // Create a hash from meeting details for consistent room ID
+  const meetingData = `${meetingTitle}-${creatorEmail}-${startTime.toISOString().split('T')[0]}`
+  const hash = simpleHash(meetingData)
   
-  // Format as Google Meet room ID (xxx-xxxx-xxx)
-  const combined = (titleHash + timeHash).substring(0, 10)
-  return `${combined.substring(0, 3)}-${combined.substring(3, 7)}-${combined.substring(7, 10)}`
+  // Format as valid Google Meet room ID
+  const roomId = formatAsGoogleMeetId(hash)
+  return `https://meet.google.com/${roomId}`
+}
+
+/**
+ * Simple hash function for generating consistent IDs
+ */
+function simpleHash(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(36)
+}
+
+/**
+ * Format hash as Google Meet room ID (xxx-xxxx-xxx)
+ */
+function formatAsGoogleMeetId(hash: string): string {
+  // Pad with random characters if needed
+  const padded = (hash + 'abcdefghijk').substring(0, 10)
+  return `${padded.substring(0, 3)}-${padded.substring(3, 7)}-${padded.substring(7, 10)}`
 }
 
 /**
