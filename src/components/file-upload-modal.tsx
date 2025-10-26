@@ -31,55 +31,44 @@ export function FileUploadModal({
   const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const uploadFileInChunks = async (file: File): Promise<void> => {
-    const CHUNK_SIZE = 3 * 1024 * 1024 // 3MB chunks (well under Vercel's 4.5MB limit)
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
-    const uploadId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const uploadFile = async (file: File): Promise<void> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('workspaceSlug', workspaceSlug)
+    if (taskId) {
+      formData.append('taskId', taskId)
+    }
 
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * CHUNK_SIZE
-      const end = Math.min(start + CHUNK_SIZE, file.size)
-      const chunk = file.slice(start, end)
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/files/simple-upload`, {
+        method: 'POST',
+        body: formData,
+      })
 
-      const formData = new FormData()
-      formData.append('chunk', chunk)
-      formData.append('chunkIndex', chunkIndex.toString())
-      formData.append('totalChunks', totalChunks.toString())
-      formData.append('uploadId', uploadId)
-      formData.append('fileName', file.name)
-      formData.append('fileSize', file.size.toString())
-      formData.append('mimeType', file.type || 'application/octet-stream')
-      formData.append('workspaceSlug', workspaceSlug)
-      if (taskId) {
-        formData.append('taskId', taskId)
-      }
-
-      try {
-        const response = await fetch(`/api/workspaces/${workspaceSlug}/files/upload-chunk`, {
-          method: 'POST',
-          body: formData,
-        })
-
-        if (!response.ok) {
+      if (!response.ok) {
+        let errorMessage = 'Upload failed'
+        try {
           const error = await response.json()
-          throw new Error(error.error || 'Upload failed')
+          errorMessage = error.error || 'Upload failed'
+        } catch {
+          if (response.status === 413) {
+            errorMessage = 'File too large - maximum size is 5MB'
+          } else if (response.status === 408) {
+            errorMessage = 'Upload timeout - please try a smaller file'
+          } else {
+            errorMessage = `Upload failed (${response.status})`
+          }
         }
-
-        const result = await response.json()
-        
-        // Update progress
-        const progress = ((chunkIndex + 1) / totalChunks) * 100
-        setUploadProgress(progress)
-
-        // If this was the last chunk, the file is complete
-        if (result.fileComplete) {
-          onFileUploaded(result.file)
-        }
-
-      } catch (error) {
-        console.error(`Failed to upload chunk ${chunkIndex}:`, error)
-        throw error
+        throw new Error(errorMessage)
       }
+
+      const result = await response.json()
+      setUploadProgress(100)
+      onFileUploaded(result)
+
+    } catch (error) {
+      console.error('Upload failed:', error)
+      throw error
     }
   }
 
@@ -91,15 +80,15 @@ export function FileUploadModal({
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       
-      // Validate file size (max 100MB)
-      if (file.size > 100 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 100MB.`)
+      // Validate file size (max 5MB for reliable storage)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size is 5MB. Please compress your file or use a file hosting service for larger files.`)
         continue
       }
 
       try {
         setUploadProgress(0)
-        await uploadFileInChunks(file)
+        await uploadFile(file)
       } catch (error) {
         console.error("Failed to upload file:", error)
         alert(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -152,7 +141,7 @@ export function FileUploadModal({
           </DialogTitle>
           <DialogDescription>
             Upload files to {taskId ? "this task" : "the workspace"}. 
-            Maximum file size: 100MB per file.
+            Maximum file size: 5MB per file.
           </DialogDescription>
         </DialogHeader>
         

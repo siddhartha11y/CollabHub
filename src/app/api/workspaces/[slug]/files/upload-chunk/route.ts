@@ -87,10 +87,30 @@ export async function POST(
     const allChunksReceived = uploadData.chunks.every(chunk => chunk !== undefined)
 
     if (allChunksReceived) {
-      // Combine all chunks
-      const completeFile = Buffer.concat(uploadData.chunks)
-      const base64 = completeFile.toString('base64')
-      const dataUrl = `data:${mimeType};base64,${base64}`
+      // Validate total file size before processing
+      if (fileSize > 10 * 1024 * 1024) { // 10MB limit for database storage
+        chunkStorage.delete(uploadId)
+        return NextResponse.json(
+          { error: "File too large. Maximum size for database storage is 10MB. Please use a file hosting service for larger files." },
+          { status: 413 }
+        )
+      }
+
+      try {
+        // Combine all chunks
+        const completeFile = Buffer.concat(uploadData.chunks)
+        
+        // Verify file size matches expected
+        if (completeFile.length !== fileSize) {
+          chunkStorage.delete(uploadId)
+          return NextResponse.json(
+            { error: "File corruption detected - size mismatch" },
+            { status: 400 }
+          )
+        }
+        
+        const base64 = completeFile.toString('base64')
+        const dataUrl = `data:${mimeType};base64,${base64}`
 
       // If taskId is provided, verify it belongs to the workspace
       if (taskId) {
@@ -152,13 +172,21 @@ export async function POST(
         }
       })
 
-      // Clean up chunk storage
-      chunkStorage.delete(uploadId)
+        // Clean up chunk storage
+        chunkStorage.delete(uploadId)
 
-      return NextResponse.json({
-        fileComplete: true,
-        file: savedFile
-      })
+        return NextResponse.json({
+          fileComplete: true,
+          file: savedFile
+        })
+      } catch (fileProcessingError) {
+        chunkStorage.delete(uploadId)
+        console.error("File processing error:", fileProcessingError)
+        return NextResponse.json(
+          { error: "Failed to process file - file may be too large or corrupted" },
+          { status: 413 }
+        )
+      }
     }
 
     // Return chunk received confirmation
@@ -171,9 +199,32 @@ export async function POST(
 
   } catch (error) {
     console.error("Chunk upload error:", error)
+    
+    // Provide more specific error messages
+    let errorMessage = "Internal server error"
+    let statusCode = 500
+    
+    if (error instanceof Error) {
+      if (error.message.includes('too large')) {
+        errorMessage = "File too large for database storage"
+        statusCode = 413
+      } else if (error.message.includes('timeout')) {
+        errorMessage = "Upload timeout - file too large"
+        statusCode = 408
+      } else if (error.message.includes('memory')) {
+        errorMessage = "File too large - insufficient memory"
+        statusCode = 413
+      } else if (error.message.includes('ECONNRESET')) {
+        errorMessage = "Connection reset - file too large"
+        statusCode = 413
+      } else {
+        errorMessage = `Upload failed: ${error.message}`
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     )
   }
 }
