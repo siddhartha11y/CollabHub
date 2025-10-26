@@ -10,7 +10,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Upload, File, X, CloudUpload } from "lucide-react"
+import { Upload, File, X, CloudUpload, CheckCircle, AlertCircle } from "lucide-react"
+import { useUploadThing } from "@/lib/uploadthing"
 
 interface FileUploadModalProps {
   children: React.ReactNode
@@ -28,69 +29,88 @@ export function FileUploadModal({
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
+  const [uploadStatus, setUploadStatus] = useState<{ [key: string]: 'uploading' | 'success' | 'error' }>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Use UploadThing for reliable file uploads
+  const { startUpload, isUploading } = useUploadThing(
+    taskId ? "taskFileUploader" : "workspaceFileUploader",
+    {
+      onClientUploadComplete: (res) => {
+        console.log("Files uploaded successfully:", res)
+        // Save file records to database
+        res?.forEach(async (file) => {
+          await saveFileRecord(file)
+        })
+        setUploading(false)
+        setOpen(false)
+      },
+      onUploadError: (error: Error) => {
+        console.error("Upload error:", error)
+        alert(`Upload failed: ${error.message}`)
+        setUploading(false)
+      },
+      onUploadProgress: (progress) => {
+        console.log("Upload progress:", progress)
+        // Update progress for UI
+      },
+    }
+  )
+
+  const saveFileRecord = async (uploadedFile: any) => {
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/files`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: uploadedFile.name,
+          url: uploadedFile.url,
+          size: uploadedFile.size,
+          mimeType: uploadedFile.type || "application/octet-stream",
+          taskId: taskId || undefined
+        }),
+      })
+
+      if (response.ok) {
+        const savedFile = await response.json()
+        onFileUploaded(savedFile)
+      } else {
+        const error = await response.json()
+        console.error(`Failed to save file record: ${error.error}`)
+      }
+    } catch (error) {
+      console.error("Failed to save file record:", error)
+    }
+  }
 
   const handleFiles = async (files: FileList) => {
     if (files.length === 0) return
 
+    // Validate file sizes
+    const maxSize = taskId ? 16 * 1024 * 1024 : 32 * 1024 * 1024 // 16MB for tasks, 32MB for workspace
+    const oversizedFiles = Array.from(files).filter(file => file.size > maxSize)
+    
+    if (oversizedFiles.length > 0) {
+      const maxSizeMB = maxSize / (1024 * 1024)
+      alert(`The following files are too large (max ${maxSizeMB}MB): ${oversizedFiles.map(f => f.name).join(', ')}`)
+      return
+    }
+
     setUploading(true)
     
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      
-      // Validate file size (max 25MB)
-      if (file.size > 25 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 25MB.`)
-        continue
-      }
-
-      try {
-        // Convert file to base64 for demo purposes
-        const base64 = await fileToBase64(file)
-        
-        // Create a mock file URL (in production, you'd upload to a service)
-        const mockFileUrl = `data:${file.type};base64,${base64.split(',')[1]}`
-        
-        // Save file record to database
-        const response = await fetch(`/api/workspaces/${workspaceSlug}/files`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: file.name,
-            url: mockFileUrl,
-            size: file.size,
-            mimeType: file.type || "application/octet-stream",
-            taskId: taskId || undefined
-          }),
-        })
-
-        if (response.ok) {
-          const savedFile = await response.json()
-          onFileUploaded(savedFile)
-        } else {
-          const error = await response.json()
-          alert(`Failed to upload ${file.name}: ${error.error}`)
-        }
-      } catch (error) {
-        console.error("Failed to upload file:", error)
-        alert(`Failed to upload ${file.name}`)
-      }
+    try {
+      // Use UploadThing to upload files
+      await startUpload(Array.from(files))
+    } catch (error) {
+      console.error("Upload failed:", error)
+      setUploading(false)
     }
-    
-    setUploading(false)
-    setOpen(false)
   }
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = error => reject(error)
-    })
-  }
+
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -131,7 +151,7 @@ export function FileUploadModal({
           </DialogTitle>
           <DialogDescription>
             Upload files to {taskId ? "this task" : "the workspace"}. 
-            Maximum file size: 25MB per file.
+            Maximum file size: {taskId ? "16MB" : "32MB"} per file.
           </DialogDescription>
         </DialogHeader>
         
@@ -153,7 +173,7 @@ export function FileUploadModal({
               multiple
               onChange={handleFileInput}
               className="hidden"
-              accept="image/*,.pdf,.doc,.docx,.txt,.md"
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.md,.zip,.rar,.csv,.xlsx,.pptx"
             />
             
             <CloudUpload className="h-12 w-12 text-gray-400 mx-auto mb-4" />

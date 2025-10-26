@@ -12,8 +12,19 @@ const nextConfig = {
     domains: [
       'ui-avatars.com',
       'lh3.googleusercontent.com',
-      'avatars.githubusercontent.com'
+      'avatars.githubusercontent.com',
+      'utfs.io' // UploadThing domain
     ],
+  },
+  // Increase body size limits for file uploads
+  experimental: {
+    serverComponentsExternalPackages: ['@uploadthing/react'],
+  },
+  // API route configuration
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb', // Increase body size limit to 50MB
+    },
   },
 }
 
