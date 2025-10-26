@@ -120,10 +120,10 @@ export default function FilesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
+        <div className="w-full max-w-7xl mx-auto px-4 py-4">
           {/* Mobile Header */}
           <div className="flex flex-col space-y-4 md:hidden">
             <div className="flex items-center justify-between">
@@ -230,7 +230,7 @@ export default function FilesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-4 md:py-8">
+      <main className="w-full max-w-7xl mx-auto px-4 py-4 md:py-8">
         {/* Search */}
         <div className="mb-4 md:mb-6">
           <div className="relative w-full md:max-w-md">
@@ -258,8 +258,8 @@ export default function FilesPage() {
                       className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 md:p-2 -m-1 md:-m-2"
                     >
                       <FileIconComponent className="h-6 w-6 md:h-8 md:w-8 text-blue-600 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white text-xs md:text-sm truncate">
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-xs md:text-sm truncate break-all">
                           {file.name}
                         </h4>
                         <p className="text-xs text-gray-500">
@@ -298,25 +298,25 @@ export default function FilesPage() {
                   </div>
                   
                   {file.task && (
-                    <div className="mb-2 md:mb-3">
-                      <Badge variant="secondary" className="text-xs">
+                    <div className="mb-2 md:mb-3 overflow-hidden">
+                      <Badge variant="secondary" className="text-xs truncate max-w-full">
                         Task: {file.task.title}
                       </Badge>
                     </div>
                   )}
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">{new Date(file.createdAt).toLocaleDateString()}</span>
-                      <span className="sm:hidden">{new Date(file.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center text-xs text-gray-500 min-w-0 flex-1">
+                      <Calendar className="h-3 w-3 mr-1 flex-shrink-0" />
+                      <span className="hidden sm:inline truncate">{new Date(file.createdAt).toLocaleDateString()}</span>
+                      <span className="sm:hidden truncate">{new Date(file.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
                     
                     <FilePreviewModal file={file}>
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="h-6 text-xs px-2"
+                        className="h-6 text-xs px-2 flex-shrink-0"
                       >
                         <Download className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">Preview</span>
