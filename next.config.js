@@ -12,20 +12,11 @@ const nextConfig = {
     domains: [
       'ui-avatars.com',
       'lh3.googleusercontent.com',
-      'avatars.githubusercontent.com',
-      'utfs.io' // UploadThing domain
+      'avatars.githubusercontent.com'
     ],
   },
-  // Increase body size limits for file uploads
-  experimental: {
-    serverComponentsExternalPackages: ['@uploadthing/react'],
-  },
-  // API route configuration
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb', // Increase body size limit to 50MB
-    },
-  },
+  // External packages for server components (Next.js 15 syntax)
+  serverExternalPackages: ['@prisma/client'],
 }
 
 module.exports = nextConfig
