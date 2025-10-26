@@ -11,7 +11,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Upload, File, X, CloudUpload, CheckCircle, AlertCircle } from "lucide-react"
-import { useUploadThing } from "@/lib/uploadthing"
 
 interface FileUploadModalProps {
   children: React.ReactNode
@@ -29,85 +28,84 @@ export function FileUploadModal({
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
-  const [uploadStatus, setUploadStatus] = useState<{ [key: string]: 'uploading' | 'success' | 'error' }>({})
+  const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Use UploadThing for reliable file uploads
-  const { startUpload, isUploading } = useUploadThing(
-    taskId ? "taskFileUploader" : "workspaceFileUploader",
-    {
-      onClientUploadComplete: (res) => {
-        console.log("Files uploaded successfully:", res)
-        // Save file records to database
-        res?.forEach(async (file) => {
-          await saveFileRecord(file)
-        })
-        setUploading(false)
-        setOpen(false)
-      },
-      onUploadError: (error: Error) => {
-        console.error("Upload error:", error)
-        alert(`Upload failed: ${error.message}`)
-        setUploading(false)
-      },
-      onUploadProgress: (progress) => {
-        console.log("Upload progress:", progress)
-        // Update progress for UI
-      },
-    }
-  )
-
-  const saveFileRecord = async (uploadedFile: any) => {
-    try {
-      const response = await fetch(`/api/workspaces/${workspaceSlug}/files`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: uploadedFile.name,
-          url: uploadedFile.url,
-          size: uploadedFile.size,
-          mimeType: uploadedFile.type || "application/octet-stream",
-          taskId: taskId || undefined
-        }),
-      })
-
-      if (response.ok) {
-        const savedFile = await response.json()
-        onFileUploaded(savedFile)
-      } else {
-        const error = await response.json()
-        console.error(`Failed to save file record: ${error.error}`)
-      }
-    } catch (error) {
-      console.error("Failed to save file record:", error)
-    }
-  }
 
   const handleFiles = async (files: FileList) => {
     if (files.length === 0) return
 
-    // Validate file sizes
-    const maxSize = taskId ? 16 * 1024 * 1024 : 32 * 1024 * 1024 // 16MB for tasks, 32MB for workspace
-    const oversizedFiles = Array.from(files).filter(file => file.size > maxSize)
-    
-    if (oversizedFiles.length > 0) {
-      const maxSizeMB = maxSize / (1024 * 1024)
-      alert(`The following files are too large (max ${maxSizeMB}MB): ${oversizedFiles.map(f => f.name).join(', ')}`)
-      return
-    }
-
     setUploading(true)
     
-    try {
-      // Use UploadThing to upload files
-      await startUpload(Array.from(files))
-    } catch (error) {
-      console.error("Upload failed:", error)
-      setUploading(false)
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size is 50MB.`)
+        continue
+      }
+
+      try {
+        // Use FormData for proper file upload
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('workspaceSlug', workspaceSlug)
+        if (taskId) {
+          formData.append('taskId', taskId)
+        }
+
+        // Upload with progress tracking
+        const xhr = new XMLHttpRequest()
+        
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const progress = (e.loaded / e.total) * 100
+            setUploadProgress(progress)
+          }
+        })
+
+        xhr.addEventListener('load', async () => {
+          if (xhr.status === 200) {
+            try {
+              const response = JSON.parse(xhr.responseText)
+              onFileUploaded(response)
+            } catch (error) {
+              console.error('Failed to parse response:', error)
+              alert(`Failed to upload ${file.name}: Invalid response`)
+            }
+          } else {
+            try {
+              const error = JSON.parse(xhr.responseText)
+              alert(`Failed to upload ${file.name}: ${error.error}`)
+            } catch {
+              alert(`Failed to upload ${file.name}: Server error`)
+            }
+          }
+        })
+
+        xhr.addEventListener('error', () => {
+          alert(`Failed to upload ${file.name}: Network error`)
+        })
+
+        // Send the request
+        xhr.open('POST', `/api/workspaces/${workspaceSlug}/files/upload`)
+        xhr.send(formData)
+
+        // Wait for completion
+        await new Promise((resolve, reject) => {
+          xhr.addEventListener('load', resolve)
+          xhr.addEventListener('error', reject)
+        })
+
+      } catch (error) {
+        console.error("Failed to upload file:", error)
+        alert(`Failed to upload ${file.name}`)
+      }
     }
+    
+    setUploading(false)
+    setUploadProgress(0)
+    setOpen(false)
   }
 
 
@@ -151,7 +149,7 @@ export function FileUploadModal({
           </DialogTitle>
           <DialogDescription>
             Upload files to {taskId ? "this task" : "the workspace"}. 
-            Maximum file size: {taskId ? "16MB" : "32MB"} per file.
+            Maximum file size: 50MB per file.
           </DialogDescription>
         </DialogHeader>
         
@@ -181,10 +179,13 @@ export function FileUploadModal({
             {uploading ? (
               <div>
                 <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  Uploading files...
+                  Uploading files... {Math.round(uploadProgress)}%
                 </p>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full animate-pulse w-1/2"></div>
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
                 </div>
               </div>
             ) : (
