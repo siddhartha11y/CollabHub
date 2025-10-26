@@ -82,7 +82,6 @@ export async function POST(
         url,
         size: parseInt(size.toString()),
         mimeType,
-        storagePath,
         workspaceId: workspace.id,
         taskId: taskId || null,
         uploadedById: user.id,
