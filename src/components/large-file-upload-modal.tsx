@@ -111,9 +111,9 @@ export function LargeFileUploadModal({
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       
-      // Validate file size (max 5GB for Supabase Storage)
-      if (file.size > 5 * 1024 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 5GB.`)
+      // Validate file size (max 50MB for current setup)
+      if (file.size > 50 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size is 50MB.`)
         continue
       }
 
@@ -170,8 +170,8 @@ export function LargeFileUploadModal({
             <span>Upload Large Files</span>
           </DialogTitle>
           <DialogDescription>
-            Upload files up to 5GB to {taskId ? "this task" : "the workspace"} using Supabase Storage.
-            Perfect for videos, large documents, and datasets.
+            Upload files up to 50MB to {taskId ? "this task" : "the workspace"} using Supabase Storage.
+            Perfect for larger PDFs, presentations, and documents.
           </DialogDescription>
         </DialogHeader>
         
@@ -224,7 +224,7 @@ export function LargeFileUploadModal({
                   Drop large files here or click to browse
                 </p>
                 <p className="text-sm text-gray-500 mb-4">
-                  Supports files up to 5GB - videos, datasets, large documents
+                  Supports files up to 50MB - larger PDFs, presentations, documents
                 </p>
                 <Button
                   onClick={() => fileInputRef.current?.click()}
@@ -232,7 +232,7 @@ export function LargeFileUploadModal({
                   className="bg-green-50 border-green-200 hover:bg-green-100"
                 >
                   <CloudUpload className="h-4 w-4 mr-2" />
-                  Choose Large Files
+                  Choose Files (50MB)
                 </Button>
               </div>
             )}

@@ -165,7 +165,7 @@ export default function FilesPage() {
               >
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Large Files (1GB)
+                  Large Files (50MB)
                 </Button>
               </LargeFileUploadModal>
             </div>
