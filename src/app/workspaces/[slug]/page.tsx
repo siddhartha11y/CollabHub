@@ -5,13 +5,12 @@ import { useSession } from "next-auth/react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { MobileHeader } from "@/components/mobile-header"
 import { 
   Users, 
   Plus, 
   Settings, 
   LogOut, 
-  ArrowLeft, 
   CheckSquare, 
   MessageSquare, 
   FileText,
@@ -80,53 +79,51 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-              <ArrowLeft className="h-5 w-5" />
-              <span>Dashboard</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {workspace.name}
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {workspace.members.length} members
-              </p>
-            </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <MobileHeader
+        workspaceSlug={params.slug as string}
+        workspaceName={workspace.name}
+        title={workspace.name}
+        subtitle={`${workspace.members.length} members`}
+        backHref="/dashboard"
+        actions={[
+          <SimpleNotificationBell key="notifications" />,
+          <div key="profile" className="hidden lg:flex items-center space-x-2">
+            <img 
+              src={session?.user?.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(session?.user?.name || "User") + "&background=3b82f6&color=fff"} 
+              alt="Profile" 
+              className="h-8 w-8 rounded-full"
+            />
+            <span className="text-sm font-medium">{session?.user?.name}</span>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <SimpleNotificationBell />
-            <InviteMembersModal workspaceSlug={params.slug as string}>
-              <Button variant="outline" size="sm">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite Members
-              </Button>
-            </InviteMembersModal>
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <ThemeToggle />
-            <div className="flex items-center space-x-2">
-              <img 
-                src={session?.user?.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(session?.user?.name || "User") + "&background=3b82f6&color=fff"} 
-                alt="Profile" 
-                className="h-8 w-8 rounded-full"
-              />
-              <span className="text-sm font-medium">{session?.user?.name}</span>
-            </div>
-          </div>
-        </div>
-      </header>
+        ]}
+        dropdownActions={[
+          {
+            label: "Invite Members",
+            icon: <UserPlus className="h-4 w-4" />,
+            onClick: () => {
+              document.querySelector('[data-invite-members]')?.click()
+            }
+          },
+          {
+            label: "Settings",
+            icon: <Settings className="h-4 w-4" />,
+            onClick: () => {
+              // Add settings functionality
+            }
+          }
+        ]}
+      />
+
+      {/* Hidden trigger buttons for mobile dropdown actions */}
+      <div className="hidden">
+        <InviteMembersModal workspaceSlug={params.slug as string}>
+          <button data-invite-members>Invite Members</button>
+        </InviteMembersModal>
+      </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full max-w-7xl mx-auto px-4 py-4 lg:py-8">
         {/* Workspace Description */}
         {workspace.description && (
           <div className="mb-8">

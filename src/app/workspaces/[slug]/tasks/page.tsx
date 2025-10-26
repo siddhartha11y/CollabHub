@@ -6,11 +6,10 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { MobileHeader } from "@/components/mobile-header"
 import { 
   Users, 
   Plus, 
-  ArrowLeft, 
   CheckSquare, 
   Clock,
   User,
@@ -19,7 +18,6 @@ import {
   Filter,
   Paperclip
 } from "lucide-react"
-import Link from "next/link"
 import { CreateTaskModal } from "@/components/create-task-modal"
 import { FileUploadModal } from "@/components/file-upload-modal"
 import { SimpleNotificationBell } from "@/components/simple-notification-bell"
@@ -113,46 +111,31 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Workspace</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                <CheckSquare className="h-5 w-5" />
-                <span>Tasks</span>
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {workspace?.name} • {tasks.length} tasks
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <SimpleNotificationBell />
-            <CreateTaskModal 
-              workspaceSlug={params.slug as string}
-              workspaceMembers={workspace?.members || []}
-              onTaskCreated={handleTaskCreated}
-            >
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Task
-              </Button>
-            </CreateTaskModal>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <MobileHeader
+        workspaceSlug={params.slug as string}
+        workspaceName={workspace?.name}
+        title="Tasks"
+        subtitle={`${workspace?.name} • ${tasks.length} tasks`}
+        backHref={`/workspaces/${params.slug}`}
+        actions={[
+          <SimpleNotificationBell key="notifications" />,
+          <CreateTaskModal 
+            key="create-task"
+            workspaceSlug={params.slug as string}
+            workspaceMembers={workspace?.members || []}
+            onTaskCreated={handleTaskCreated}
+          >
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              New Task
+            </Button>
+          </CreateTaskModal>
+        ]}
+      />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full max-w-7xl mx-auto px-4 py-4 lg:py-8">
         {/* Filters */}
         <div className="flex space-x-2 mb-6">
           {["ALL", "TODO", "IN_PROGRESS", "REVIEW", "DONE"].map((status) => (

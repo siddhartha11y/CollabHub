@@ -22,10 +22,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { MobileHeader } from "@/components/mobile-header"
 import { 
   Plus, 
-  ArrowLeft, 
   Video,
   Calendar,
   Clock,
@@ -34,7 +33,6 @@ import {
   Trash2,
   MoreVertical
 } from "lucide-react"
-import Link from "next/link"
 import { CreateMeetingModal } from "@/components/create-meeting-modal"
 import { formatDisplayTime, formatDisplayDateTime, isMeetingUpcoming, isMeetingPast, isMeetingActive, isMeetingLive, getMeetingStatus } from "@/lib/date-utils"
 
@@ -128,76 +126,29 @@ export default function MeetingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          {/* Mobile Layout */}
-          <div className="flex flex-col space-y-4 md:hidden">
-            <div className="flex items-center justify-between">
-              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-                <ArrowLeft className="h-5 w-5" />
-                <span className="text-sm">Back</span>
-              </Link>
-              <ThemeToggle />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                <Video className="h-5 w-5" />
-                <span>Meetings</span>
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {workspace?.name} • {meetings.length} meetings
-              </p>
-            </div>
-            <CreateMeetingModal 
-              workspaceSlug={params.slug as string}
-              onMeetingCreated={handleMeetingCreated}
-            >
-              <Button className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Schedule Meeting
-              </Button>
-            </CreateMeetingModal>
-          </div>
-
-          {/* Desktop Layout */}
-          <div className="hidden md:flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-                <ArrowLeft className="h-5 w-5" />
-                <span>Back to Workspace</span>
-              </Link>
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                  <Video className="h-5 w-5" />
-                  <span>Meetings</span>
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {workspace?.name} • {meetings.length} meetings
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <CreateMeetingModal 
-                workspaceSlug={params.slug as string}
-                onMeetingCreated={handleMeetingCreated}
-              >
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Schedule Meeting
-                </Button>
-              </CreateMeetingModal>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <MobileHeader
+        workspaceSlug={params.slug as string}
+        workspaceName={workspace?.name}
+        title="Meetings"
+        subtitle={`${workspace?.name} • ${meetings.length} meetings`}
+        backHref={`/workspaces/${params.slug}`}
+        actions={[
+          <CreateMeetingModal 
+            key="create-meeting"
+            workspaceSlug={params.slug as string}
+            onMeetingCreated={handleMeetingCreated}
+          >
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Schedule
+            </Button>
+          </CreateMeetingModal>
+        ]}
+      />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full max-w-7xl mx-auto px-4 py-4 lg:py-8">
         {/* Live Meetings */}
         {liveMeetings.length > 0 && (
           <div className="mb-8">

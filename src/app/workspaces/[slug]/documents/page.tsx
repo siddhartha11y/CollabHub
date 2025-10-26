@@ -5,10 +5,9 @@ import { useSession } from "next-auth/react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { MobileHeader } from "@/components/mobile-header"
 import { 
   Plus, 
-  ArrowLeft, 
   FileText,
   User,
   Calendar,
@@ -16,7 +15,6 @@ import {
   Search,
   History
 } from "lucide-react"
-import Link from "next/link"
 import { CreateDocumentModal } from "@/components/create-document-modal"
 import { DocumentActivityLog } from "@/components/document-activity-log"
 import { DocumentActionsDropdown } from "@/components/document-actions-dropdown"
@@ -100,50 +98,45 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Workspace</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <span>Documents</span>
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {workspace?.name} • {documents.length} documents
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <DocumentActivityLog workspaceSlug={params.slug as string}>
-              <Button variant="outline" size="sm">
-                <History className="h-4 w-4 mr-2" />
-                Activity Log
-              </Button>
-            </DocumentActivityLog>
-            <CreateDocumentModal 
-              workspaceSlug={params.slug as string}
-              onDocumentCreated={handleDocumentCreated}
-            >
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Document
-              </Button>
-            </CreateDocumentModal>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <MobileHeader
+        workspaceSlug={params.slug as string}
+        workspaceName={workspace?.name}
+        title="Documents"
+        subtitle={`${workspace?.name} • ${documents.length} documents`}
+        backHref={`/workspaces/${params.slug}`}
+        actions={[
+          <CreateDocumentModal 
+            key="create-document"
+            workspaceSlug={params.slug as string}
+            onDocumentCreated={handleDocumentCreated}
+          >
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              New Doc
+            </Button>
+          </CreateDocumentModal>
+        ]}
+        dropdownActions={[
+          {
+            label: "Activity Log",
+            icon: <History className="h-4 w-4" />,
+            onClick: () => {
+              document.querySelector('[data-document-activity]')?.click()
+            }
+          }
+        ]}
+      />
+
+      {/* Hidden trigger buttons for mobile dropdown actions */}
+      <div className="hidden">
+        <DocumentActivityLog workspaceSlug={params.slug as string}>
+          <button data-document-activity>Activity Log</button>
+        </DocumentActivityLog>
+      </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full max-w-7xl mx-auto px-4 py-4 lg:py-8">
         {/* Search */}
         <div className="mb-6">
           <div className="relative max-w-md">

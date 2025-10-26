@@ -6,21 +6,19 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { MobileHeader } from "@/components/mobile-header"
 import { 
   Plus, 
-  ArrowLeft, 
   File,
   Download,
   Calendar,
-  MoreVertical,
   Search,
   FileText,
   Image,
   FileIcon,
-  History
+  History,
+  Upload
 } from "lucide-react"
-import Link from "next/link"
 import { FileUploadModal } from "@/components/file-upload-modal"
 import { LargeFileUploadModal } from "@/components/large-file-upload-modal"
 import { FilePreviewModal } from "@/components/file-preview-modal"
@@ -121,116 +119,75 @@ export default function FilesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="w-full max-w-7xl mx-auto px-4 py-4">
-          {/* Mobile Header */}
-          <div className="flex flex-col space-y-4 md:hidden">
-            <div className="flex items-center justify-between">
-              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-                <ArrowLeft className="h-5 w-5" />
-                <span className="text-sm">Back</span>
-              </Link>
-              <ThemeToggle />
-            </div>
-            
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                <File className="h-5 w-5" />
-                <span>Files</span>
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {workspace?.name} • {files.length} files
-              </p>
-            </div>
-            
-            <div className="flex flex-col space-y-2">
-              <div className="flex space-x-2">
-                <FileUploadModal 
-                  workspaceSlug={params.slug as string}
-                  onFileUploaded={handleFileUploaded}
-                >
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Small (5MB)
-                  </Button>
-                </FileUploadModal>
-                
-                <LargeFileUploadModal 
-                  workspaceSlug={params.slug as string}
-                  onFileUploaded={handleFileUploaded}
-                >
-                  <Button size="sm" className="flex-1">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Large (50MB)
-                  </Button>
-                </LargeFileUploadModal>
-              </div>
-              
-              <FileActivityLog workspaceSlug={params.slug as string}>
-                <Button variant="outline" size="sm" className="w-full">
-                  <History className="h-4 w-4 mr-2" />
-                  Activity Log
-                </Button>
-              </FileActivityLog>
-            </div>
-          </div>
+      <MobileHeader
+        workspaceSlug={params.slug as string}
+        workspaceName={workspace?.name}
+        title="Files"
+        subtitle={`${workspace?.name} • ${files.length} files`}
+        backHref={`/workspaces/${params.slug}`}
+        actions={[
+          <FileUploadModal 
+            key="small-upload"
+            workspaceSlug={params.slug as string}
+            onFileUploaded={handleFileUploaded}
+          >
+            <Button variant="outline" size="sm">
+              <Upload className="h-4 w-4 mr-2" />
+              Upload
+            </Button>
+          </FileUploadModal>
+        ]}
+        dropdownActions={[
+          {
+            label: "Upload Small Files (5MB)",
+            icon: <Upload className="h-4 w-4" />,
+            onClick: () => {
+              // Trigger small file upload modal
+              document.querySelector('[data-upload-small]')?.click()
+            }
+          },
+          {
+            label: "Upload Large Files (50MB)",
+            icon: <Upload className="h-4 w-4" />,
+            onClick: () => {
+              // Trigger large file upload modal
+              document.querySelector('[data-upload-large]')?.click()
+            }
+          },
+          {
+            label: "Activity Log",
+            icon: <History className="h-4 w-4" />,
+            onClick: () => {
+              // Trigger activity log modal
+              document.querySelector('[data-activity-log]')?.click()
+            }
+          }
+        ]}
+      />
 
-          {/* Desktop Header */}
-          <div className="hidden md:flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <Link href={`/workspaces/${params.slug}`} className="flex items-center space-x-2 text-blue-600 hover:text-blue-700">
-                <ArrowLeft className="h-5 w-5" />
-                <span>Back to Workspace</span>
-              </Link>
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center space-x-2">
-                  <File className="h-5 w-5" />
-                  <span>Files</span>
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {workspace?.name} • {files.length} files
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <FileActivityLog workspaceSlug={params.slug as string}>
-                <Button variant="outline" size="sm">
-                  <History className="h-4 w-4 mr-2" />
-                  Activity Log
-                </Button>
-              </FileActivityLog>
-              <div className="flex space-x-2">
-                <FileUploadModal 
-                  workspaceSlug={params.slug as string}
-                  onFileUploaded={handleFileUploaded}
-                >
-                  <Button variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Small Files (5MB)
-                  </Button>
-                </FileUploadModal>
-                
-                <LargeFileUploadModal 
-                  workspaceSlug={params.slug as string}
-                  onFileUploaded={handleFileUploaded}
-                >
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Large Files (50MB)
-                  </Button>
-                </LargeFileUploadModal>
-              </div>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Hidden trigger buttons for mobile dropdown actions */}
+      <div className="hidden">
+        <FileUploadModal 
+          workspaceSlug={params.slug as string}
+          onFileUploaded={handleFileUploaded}
+        >
+          <button data-upload-small>Small Upload</button>
+        </FileUploadModal>
+        
+        <LargeFileUploadModal 
+          workspaceSlug={params.slug as string}
+          onFileUploaded={handleFileUploaded}
+        >
+          <button data-upload-large>Large Upload</button>
+        </LargeFileUploadModal>
+        
+        <FileActivityLog workspaceSlug={params.slug as string}>
+          <button data-activity-log>Activity Log</button>
+        </FileActivityLog>
+      </div>
 
       {/* Main Content */}
-      <main className="w-full max-w-7xl mx-auto px-4 py-4 md:py-8">
+      <main className="w-full max-w-7xl mx-auto px-4 py-4 lg:py-8">
         {/* Search */}
         <div className="mb-4 md:mb-6">
           <div className="relative w-full md:max-w-md">
