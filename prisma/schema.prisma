@@ -53,6 +53,20 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
+  // Profile fields
+  bio           String?   @db.Text
+  title         String?   // Job title
+  company       String?   // Company name
+  location      String?   // Location
+  website       String?   // Personal website
+  phone         String?   // Phone number
+  timezone      String?   // User timezone
+  theme         String?   @default("system") // UI theme preference
+  language      String?   @default("en") // Language preference
+  emailNotifications Boolean   @default(true) // Email notifications
+  isOnline      Boolean   @default(false) // Online status
+  lastSeen      DateTime? // Last activity
+  
   // Workspace relationships
   workspaceMembers WorkspaceMember[]
   createdWorkspaces Workspace[] @relation("WorkspaceCreator")
