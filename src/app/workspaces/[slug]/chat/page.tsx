@@ -22,7 +22,15 @@ export default function ChatPage() {
   const [createChannelModalOpen, setCreateChannelModalOpen] = useState(false)
 
   // Use custom hooks for chat and channel management
-  const { messages, sending, sendMessage } = useChat({
+  const { 
+    messages, 
+    sending, 
+    sendMessage, 
+    typingUsers, 
+    handleTyping, 
+    stopTyping, 
+    isConnected 
+  } = useChat({
     workspaceSlug: params.slug as string,
     channelId: activeChannel?.id || null
   })
@@ -209,6 +217,10 @@ export default function ChatPage() {
                 channelName={activeChannel.name}
                 channelDescription={activeChannel.description}
                 currentUserEmail={session?.user?.email || ''}
+                typingUsers={typingUsers}
+                onTyping={handleTyping}
+                onStopTyping={stopTyping}
+                isConnected={isConnected}
               />
             ) : (
               <div className="h-full flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg shadow-lg">

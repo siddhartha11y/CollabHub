@@ -29,6 +29,12 @@ interface Message {
   }
 }
 
+interface TypingUser {
+  userId: string
+  userName: string
+  userImage?: string
+}
+
 interface ModernChatInterfaceProps {
   messages: Message[]
   onSendMessage: (content: string) => Promise<boolean>
@@ -36,6 +42,10 @@ interface ModernChatInterfaceProps {
   channelName: string
   channelDescription?: string
   currentUserEmail: string
+  typingUsers?: TypingUser[]
+  onTyping?: () => void
+  onStopTyping?: () => void
+  isConnected?: boolean
 }
 
 // Popular emojis for quick access
@@ -63,7 +73,11 @@ export function ModernChatInterface({
   sending,
   channelName,
   channelDescription,
-  currentUserEmail
+  currentUserEmail,
+  typingUsers = [],
+  onTyping,
+  onStopTyping,
+  isConnected = false
 }: ModernChatInterfaceProps) {
   const [newMessage, setNewMessage] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -94,11 +108,30 @@ export function ModernChatInterface({
     e.preventDefault()
     if (!newMessage.trim() || sending) return
 
+    // Stop typing indicator
+    onStopTyping?.()
+
     const success = await onSendMessage(newMessage)
     if (success) {
       setNewMessage('')
       inputRef.current?.focus()
     }
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value)
+    
+    // Trigger typing indicator
+    if (e.target.value.trim() && onTyping) {
+      onTyping()
+    } else if (!e.target.value.trim() && onStopTyping) {
+      onStopTyping()
+    }
+  }
+
+  const handleInputBlur = () => {
+    // Stop typing when input loses focus
+    onStopTyping?.()
   }
 
   const addEmoji = (emoji: string) => {
@@ -144,9 +177,22 @@ export function ModernChatInterface({
                 <Hash className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {channelName}
-                </h2>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    {channelName}
+                  </h2>
+                  {isConnected ? (
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-green-600 dark:text-green-400">Live</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-xs text-red-600 dark:text-red-400">Offline</span>
+                    </div>
+                  )}
+                </div>
                 {channelDescription && (
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     {channelDescription}
@@ -235,6 +281,42 @@ export function ModernChatInterface({
             )
           })
         )}
+        
+        {/* Typing Indicators */}
+        {typingUsers.length > 0 && (
+          <div className="flex items-center space-x-3 animate-in slide-in-from-bottom-2 duration-300">
+            <div className="flex-shrink-0">
+              <div className="flex -space-x-2">
+                {typingUsers.slice(0, 3).map((user) => (
+                  <img
+                    key={user.userId}
+                    src={user.userImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.userName || 'User')}&background=3b82f6&color=fff`}
+                    alt={user.userName}
+                    className="h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-800 shadow-sm"
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {typingUsers.length === 1 
+                    ? `${typingUsers[0].userName} is typing`
+                    : typingUsers.length === 2
+                    ? `${typingUsers[0].userName} and ${typingUsers[1].userName} are typing`
+                    : `${typingUsers[0].userName} and ${typingUsers.length - 1} others are typing`
+                  }
+                </span>
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -246,9 +328,10 @@ export function ModernChatInterface({
               <Input
                 ref={inputRef}
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
                 placeholder={`Message #${channelName}...`}
-                disabled={sending}
+                disabled={sending || !isConnected}
                 className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-slate-900 dark:text-white placeholder:text-slate-500"
               />
               
@@ -299,10 +382,21 @@ export function ModernChatInterface({
           {/* Send Button */}
           <Button
             type="submit"
-            disabled={!newMessage.trim() || sending}
-            className="h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+            disabled={!newMessage.trim() || sending || !isConnected}
+            className={cn(
+              "h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105",
+              sending 
+                ? "bg-gray-400 cursor-not-allowed" 
+                : isConnected
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-red-500 hover:bg-red-600"
+            )}
           >
-            <Send className="h-5 w-5" />
+            {sending ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
           </Button>
         </form>
       </div>
