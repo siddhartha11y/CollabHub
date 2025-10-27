@@ -53,9 +53,9 @@ export function isMeetingPast(startTime: Date | string, endTime?: Date | string)
   const now = new Date()
   
   if (endTime) {
-    // If we have an end time, add 15 minutes buffer
+    // If we have an end time, add small 2 minute buffer for grace period
     const endDate = typeof endTime === 'string' ? new Date(endTime) : endTime
-    const endWithBuffer = new Date(endDate.getTime() + 15 * 60 * 1000) // +15 minutes
+    const endWithBuffer = new Date(endDate.getTime() + 2 * 60 * 1000) // +2 minutes
     return endWithBuffer < now
   } else {
     // If no end time, assume 2 hour duration (more generous)
@@ -96,12 +96,12 @@ export function isMeetingActive(startTime: Date | string, endTime?: Date | strin
   const now = new Date()
   const startDate = typeof startTime === 'string' ? new Date(startTime) : startTime
   
-  // Meeting is active if it started within the last 15 minutes or is currently running
-  const startWithBuffer = new Date(startDate.getTime() - 15 * 60 * 1000) // -15 minutes
+  // Meeting is active if it started within the last 5 minutes or is currently running
+  const startWithBuffer = new Date(startDate.getTime() - 5 * 60 * 1000) // -5 minutes
   
   if (endTime) {
     const endDate = typeof endTime === 'string' ? new Date(endTime) : endTime
-    const endWithBuffer = new Date(endDate.getTime() + 15 * 60 * 1000) // +15 minutes
+    const endWithBuffer = new Date(endDate.getTime() + 2 * 60 * 1000) // +2 minutes
     return startWithBuffer <= now && now <= endWithBuffer
   } else {
     // If no end time, assume 2 hour duration
