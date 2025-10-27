@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useSocket } from './use-socket'
 
 interface Message {
   id: string
@@ -27,14 +26,16 @@ interface UseChatOptions {
 
 export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
   const { data: session } = useSession()
-  const { socket, isConnected } = useSocket()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isConnected, setIsConnected] = useState(true) // Always connected for simplicity
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isTypingRef = useRef(false)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastMessageIdRef = useRef<string>('')
 
   // Get current user info
   useEffect(() => {
@@ -58,6 +59,9 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
       if (response.ok) {
         const data = await response.json()
         setMessages(data)
+        if (data.length > 0) {
+          lastMessageIdRef.current = data[data.length - 1].id
+        }
       }
     } catch (error) {
       console.error('Failed to load messages:', error)
@@ -66,66 +70,66 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
     }
   }, [channelId, workspaceSlug])
 
-  // Setup Socket.IO listeners
-  useEffect(() => {
-    if (!socket || !channelId || !currentUser) return
+  // Poll for new messages (fast polling - every 1 second)
+  const pollForNewMessages = useCallback(async () => {
+    if (!channelId || !workspaceSlug) return
 
-    // Join workspace and channel
-    socket.emit('join-workspace', workspaceSlug)
-    socket.emit('join-channel', { channelId, user: currentUser })
-
-    // Listen for new messages
-    const handleMessageReceived = (message: Message) => {
-      console.log('📨 Message received:', message)
-      setMessages(prev => {
-        // Avoid duplicates
-        if (prev.some(msg => msg.id === message.id)) {
-          return prev
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/chat?channelId=${channelId}&after=${lastMessageIdRef.current}`)
+      if (response.ok) {
+        const newMessages = await response.json()
+        if (newMessages.length > 0) {
+          setMessages(prev => {
+            const combined = [...prev, ...newMessages]
+            // Remove duplicates
+            const unique = combined.filter((msg, index, self) => 
+              index === self.findIndex(m => m.id === msg.id)
+            )
+            return unique
+          })
+          lastMessageIdRef.current = newMessages[newMessages.length - 1].id
         }
-        return [...prev, message]
-      })
-    }
-
-    // Listen for typing indicators
-    const handleUserTyping = (data: TypingUser) => {
-      if (data.userId !== currentUser.id) {
-        setTypingUsers(prev => {
-          if (prev.some(user => user.userId === data.userId)) {
-            return prev
-          }
-          return [...prev, data]
-        })
       }
+    } catch (error) {
+      console.error('Failed to poll messages:', error)
     }
+  }, [channelId, workspaceSlug])
 
-    const handleUserStoppedTyping = (data: { userId: string }) => {
-      setTypingUsers(prev => prev.filter(user => user.userId !== data.userId))
-    }
-
-    // Attach listeners
-    socket.on('message-received', handleMessageReceived)
-    socket.on('user-typing', handleUserTyping)
-    socket.on('user-stopped-typing', handleUserStoppedTyping)
+  // Setup polling
+  useEffect(() => {
+    if (!channelId || !currentUser) return
 
     // Load initial messages
     loadMessages()
 
+    // Start fast polling for new messages
+    pollIntervalRef.current = setInterval(pollForNewMessages, 1000) // Poll every 1 second
+
     return () => {
-      // Leave channel when component unmounts or channel changes
-      socket.emit('leave-channel', { channelId, user: currentUser })
-      socket.off('message-received', handleMessageReceived)
-      socket.off('user-typing', handleUserTyping)
-      socket.off('user-stopped-typing', handleUserStoppedTyping)
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
     }
-  }, [socket, channelId, workspaceSlug, currentUser, loadMessages])
+  }, [channelId, currentUser, loadMessages, pollForNewMessages])
 
-  // Send message with Socket.IO
+  // Send message with optimistic updates
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || !channelId || sending || !socket || !currentUser) return false
+    if (!content.trim() || !channelId || sending || !currentUser) return false
 
+    // Create optimistic message
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}-${Math.random()}`,
+      content: content.trim(),
+      createdAt: new Date().toISOString(),
+      author: currentUser
+    }
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage])
     setSending(true)
+
     try {
-      // First save to database
+      // Send to server
       const response = await fetch(`/api/workspaces/${workspaceSlug}/chat`, {
         method: 'POST',
         headers: {
@@ -138,62 +142,42 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
       })
 
       if (response.ok) {
-        const message = await response.json()
+        const realMessage = await response.json()
         
-        // Immediately broadcast via Socket.IO for real-time delivery
-        socket.emit('send-message', {
-          channelId,
-          message,
-          workspaceSlug
-        })
+        // Replace optimistic message with real message
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === optimisticMessage.id ? realMessage : msg
+          )
+        )
+
+        // Update last message ID
+        lastMessageIdRef.current = realMessage.id
 
         return true
+      } else {
+        // Remove optimistic message on failure
+        setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id))
+        return false
       }
-      return false
     } catch (error) {
       console.error('Failed to send message:', error)
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id))
       return false
     } finally {
       setSending(false)
     }
-  }, [channelId, workspaceSlug, sending, socket, currentUser])
+  }, [channelId, workspaceSlug, sending, currentUser])
 
-  // Handle typing indicators
+  // Simplified typing indicators (no real-time for now)
   const handleTyping = useCallback(() => {
-    if (!socket || !channelId || !currentUser) return
-
-    if (!isTypingRef.current) {
-      isTypingRef.current = true
-      socket.emit('typing-start', { channelId, user: currentUser })
-    }
-
-    // Clear existing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
-
-    // Set new timeout to stop typing indicator
-    typingTimeoutRef.current = setTimeout(() => {
-      if (isTypingRef.current) {
-        isTypingRef.current = false
-        socket.emit('typing-stop', { channelId, user: currentUser })
-      }
-    }, 1000) // Stop typing after 1 second of inactivity
-  }, [socket, channelId, currentUser])
+    // For now, just a placeholder
+  }, [])
 
   const stopTyping = useCallback(() => {
-    if (!socket || !channelId || !currentUser) return
-
-    if (isTypingRef.current) {
-      isTypingRef.current = false
-      socket.emit('typing-stop', { channelId, user: currentUser })
-    }
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-      typingTimeoutRef.current = null
-    }
-  }, [socket, channelId, currentUser])
+    // For now, just a placeholder
+  }, [])
 
   // Format messages with "Me" vs actual name
   const formattedMessages = messages.map(message => ({
@@ -207,7 +191,7 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
     sending,
     sendMessage,
     refreshMessages: loadMessages,
-    typingUsers,
+    typingUsers: [], // Disabled for now
     handleTyping,
     stopTyping,
     isConnected

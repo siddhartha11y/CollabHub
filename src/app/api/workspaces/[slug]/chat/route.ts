@@ -25,6 +25,7 @@ export async function GET(
 
     const { searchParams } = new URL(req.url)
     const channelId = searchParams.get('channelId')
+    const afterMessageId = searchParams.get('after')
 
     // Get user
     const user = await prisma.user.findUnique({
@@ -58,14 +59,27 @@ export async function GET(
     }
 
     if (channelId) {
+      // Build where clause
+      const whereClause: any = {
+        channelId: channelId,
+        channel: {
+          workspaceId: workspace.id
+        }
+      }
+
+      // If polling for new messages after a specific message
+      if (afterMessageId) {
+        whereClause.createdAt = {
+          gt: (await prisma.chatMessage.findUnique({
+            where: { id: afterMessageId },
+            select: { createdAt: true }
+          }))?.createdAt || new Date(0)
+        }
+      }
+
       // Get messages for specific channel
       const messages = await prisma.chatMessage.findMany({
-        where: {
-          channelId: channelId,
-          channel: {
-            workspaceId: workspace.id
-          }
-        },
+        where: whereClause,
         include: {
           author: {
             select: {
@@ -79,7 +93,7 @@ export async function GET(
         orderBy: {
           createdAt: "asc"
         },
-        take: 50
+        take: afterMessageId ? 10 : 50 // Limit new messages to 10
       })
 
       return NextResponse.json(messages)
