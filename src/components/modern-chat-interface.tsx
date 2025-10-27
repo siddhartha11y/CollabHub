@@ -13,11 +13,7 @@ import {
   Users,
   Settings
 } from 'lucide-react'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+
 import { cn } from '@/lib/utils'
 
 interface Message {
@@ -73,11 +69,26 @@ export function ModernChatInterface({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false)
+      }
+    }
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showEmojiPicker])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -243,32 +254,34 @@ export function ModernChatInterface({
               
               <div className="flex items-center space-x-1">
                 {/* Emoji Picker */}
-                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <Smile className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4" align="end">
-                    <div className="grid grid-cols-10 gap-2 max-h-64 overflow-y-auto">
-                      {QUICK_EMOJIS.map((emoji, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => addEmoji(emoji)}
-                          className="p-2 text-lg hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-150"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
+                <div className="relative" ref={emojiPickerRef}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                  
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full right-0 mb-2 w-80 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-50">
+                      <div className="grid grid-cols-10 gap-2 max-h-64 overflow-y-auto">
+                        {QUICK_EMOJIS.map((emoji, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => addEmoji(emoji)}
+                            className="p-2 text-lg hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors duration-150"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </PopoverContent>
-                </Popover>
+                  )}
+                </div>
 
                 {/* Attachment Button */}
                 <Button
