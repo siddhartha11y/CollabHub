@@ -62,13 +62,11 @@ model User {
   createdTasks Task[] @relation("TaskCreator")
   assignedTasks Task[] @relation("TaskAssignee")
   documents Document[]
-  chatMessages ChatMessage[]
   uploadedFiles File[] @relation("FileUploader")
   fileActivitiesPerformed FileActivity[] @relation("FileActivityPerformer")
   fileActivitiesAsOwner FileActivity[] @relation("FileActivityOriginalOwner")
   documentActivitiesPerformed DocumentActivity[] @relation("DocumentActivityPerformer")
   documentActivitiesAsAuthor DocumentActivity[] @relation("DocumentActivityOriginalAuthor")
-  createdChannels ChatChannel[] @relation("ChannelCreator")
   
   // Task management relationships
   notifications Notification[]
@@ -104,7 +102,6 @@ model Workspace {
   // Content
   tasks       Task[]
   documents   Document[]
-  chatChannels ChatChannel[]
   meetings    Meeting[]
   files       File[]
   invitations WorkspaceInvitation[]
@@ -171,34 +168,7 @@ model Document {
   author      User @relation(fields: [authorId], references: [id])
 }
 
-model ChatChannel {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  
-  // Relationships
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  
-  createdById String?
-  createdBy   User? @relation("ChannelCreator", fields: [createdById], references: [id])
-  
-  messages    ChatMessage[]
-}
 
-model ChatMessage {
-  id          String   @id @default(cuid())
-  content     String   @db.Text
-  createdAt   DateTime @default(now())
-  
-  // Relationships
-  channelId   String
-  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  
-  authorId    String
-  author      User @relation(fields: [authorId], references: [id])
-}
 
 model Meeting {
   id          String   @id @default(cuid())

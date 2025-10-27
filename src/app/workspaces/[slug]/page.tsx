@@ -12,7 +12,6 @@ import {
   Settings, 
   LogOut, 
   CheckSquare, 
-  MessageSquare, 
   FileText,
   UserPlus,
   MoreVertical,
@@ -136,7 +135,7 @@ export default function WorkspacePage() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Link href={`/workspaces/${params.slug}/tasks`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardContent className="flex flex-col items-center justify-center p-6">
@@ -149,17 +148,7 @@ export default function WorkspacePage() {
             </Card>
           </Link>
 
-          <Link href={`/workspaces/${params.slug}/chat`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="flex flex-col items-center justify-center p-6">
-                <MessageSquare className="h-8 w-8 text-green-600 mb-3" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Chat</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                  Team communication
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
+
 
           <Link href={`/workspaces/${params.slug}/documents`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
