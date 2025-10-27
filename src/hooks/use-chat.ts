@@ -102,8 +102,8 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
     // Load initial messages
     loadMessages()
 
-    // Start fast polling for new messages
-    pollIntervalRef.current = setInterval(pollForNewMessages, 1000) // Poll every 1 second
+    // Start very fast polling for new messages
+    pollIntervalRef.current = setInterval(pollForNewMessages, 500) // Poll every 0.5 seconds
 
     return () => {
       if (pollIntervalRef.current) {
@@ -112,24 +112,14 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
     }
   }, [channelId, currentUser, loadMessages, pollForNewMessages])
 
-  // Send message with optimistic updates
+  // Send message - SIMPLE AND RELIABLE
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || !channelId || sending || !currentUser) return false
 
-    // Create optimistic message
-    const optimisticMessage: Message = {
-      id: `temp-${Date.now()}-${Math.random()}`,
-      content: content.trim(),
-      createdAt: new Date().toISOString(),
-      author: currentUser
-    }
-
-    // Add optimistic message immediately
-    setMessages(prev => [...prev, optimisticMessage])
     setSending(true)
 
     try {
-      // Send to server
+      // Send to server FIRST - no optimistic updates
       const response = await fetch(`/api/workspaces/${workspaceSlug}/chat`, {
         method: 'POST',
         headers: {
@@ -144,26 +134,19 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
       if (response.ok) {
         const realMessage = await response.json()
         
-        // Replace optimistic message with real message
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === optimisticMessage.id ? realMessage : msg
-          )
-        )
-
+        // Add real message to state
+        setMessages(prev => [...prev, realMessage])
+        
         // Update last message ID
         lastMessageIdRef.current = realMessage.id
 
         return true
       } else {
-        // Remove optimistic message on failure
-        setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id))
+        console.error('Failed to send message')
         return false
       }
     } catch (error) {
       console.error('Failed to send message:', error)
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id))
       return false
     } finally {
       setSending(false)

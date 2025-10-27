@@ -121,16 +121,15 @@ export function ModernChatInterface({
 
     const messageToSend = newMessage.trim()
     
-    // Clear input immediately for instant feedback
-    setNewMessage('')
-    
     // Stop typing indicator
     onStopTyping?.()
 
+    // Send message
     const success = await onSendMessage(messageToSend)
-    if (!success) {
-      // Restore message if sending failed
-      setNewMessage(messageToSend)
+    
+    // Only clear input if message was sent successfully
+    if (success) {
+      setNewMessage('')
     }
     
     // Focus back to input
