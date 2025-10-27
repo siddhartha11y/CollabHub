@@ -17,7 +17,6 @@ import {
   Menu, 
   MoreVertical,
   File,
-  MessageSquare,
   Calendar,
   CheckSquare,
   FileText,
@@ -73,11 +72,7 @@ export function MobileHeader({
       href: `/workspaces/${workspaceSlug}/documents`,
       icon: <FileText className="h-4 w-4" />
     },
-    {
-      label: "Chat",
-      href: `/workspaces/${workspaceSlug}/chat`,
-      icon: <MessageSquare className="h-4 w-4" />
-    },
+
     {
       label: "Meetings",
       href: `/workspaces/${workspaceSlug}/meetings`,
