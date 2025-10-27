@@ -15,17 +15,24 @@ import { Textarea } from "@/components/ui/textarea"
 import { Hash } from "lucide-react"
 
 interface CreateChannelModalProps {
-  children: React.ReactNode
+  children?: React.ReactNode
   workspaceSlug: string
   onChannelCreated: (channel: any) => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function CreateChannelModal({ 
   children, 
   workspaceSlug, 
-  onChannelCreated 
+  onChannelCreated,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange
 }: CreateChannelModalProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = externalOnOpenChange || setInternalOpen
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -69,9 +76,11 @@ export function CreateChannelModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      {children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
