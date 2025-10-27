@@ -179,10 +179,48 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
     // For now, just a placeholder
   }, [])
 
-  // Format messages with "Me" vs actual name
+  // Delete message function
+  const deleteMessage = useCallback(async (messageId: string) => {
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceSlug}/chat/${messageId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Remove message from local state immediately
+        setMessages(prev => prev.filter(msg => msg.id !== messageId))
+        return true
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to delete message')
+        return false
+      }
+    } catch (error) {
+      console.error('Failed to delete message:', error)
+      alert('Failed to delete message')
+      return false
+    }
+  }, [workspaceSlug])
+
+  // Check if message can be deleted (within 5 minutes and by current user)
+  const canDeleteMessage = useCallback((message: Message) => {
+    if (!currentUser || message.author.email !== currentUser.email) {
+      return false
+    }
+
+    const now = new Date()
+    const messageTime = new Date(message.createdAt)
+    const timeDifference = now.getTime() - messageTime.getTime()
+    const fiveMinutesInMs = 5 * 60 * 1000
+
+    return timeDifference <= fiveMinutesInMs
+  }, [currentUser])
+
+  // Format messages with "Me" vs actual name and deletion capability
   const formattedMessages = messages.map(message => ({
     ...message,
-    displayName: message.author.email === currentUser?.email ? 'Me' : message.author.name
+    displayName: message.author.email === currentUser?.email ? 'Me' : message.author.name,
+    canDelete: canDeleteMessage(message)
   }))
 
   return {
@@ -190,6 +228,7 @@ export function useChat({ workspaceSlug, channelId }: UseChatOptions) {
     loading,
     sending,
     sendMessage,
+    deleteMessage,
     refreshMessages: loadMessages,
     typingUsers: [], // Disabled for now
     handleTyping,

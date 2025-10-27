@@ -11,8 +11,16 @@ import {
   MoreHorizontal,
   Hash,
   Users,
-  Settings
+  Settings,
+  Trash2,
+  MoreVertical
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import { cn } from '@/lib/utils'
 
@@ -21,6 +29,7 @@ interface Message {
   content: string
   createdAt: string
   displayName: string
+  canDelete?: boolean
   author: {
     id: string
     name: string
@@ -38,6 +47,7 @@ interface TypingUser {
 interface ModernChatInterfaceProps {
   messages: Message[]
   onSendMessage: (content: string) => Promise<boolean>
+  onDeleteMessage?: (messageId: string) => Promise<boolean>
   sending: boolean
   channelName: string
   channelDescription?: string
@@ -70,6 +80,7 @@ const QUICK_EMOJIS = [
 export function ModernChatInterface({
   messages,
   onSendMessage,
+  onDeleteMessage,
   sending,
   channelName,
   channelDescription,
@@ -108,14 +119,22 @@ export function ModernChatInterface({
     e.preventDefault()
     if (!newMessage.trim() || sending) return
 
+    const messageToSend = newMessage.trim()
+    
+    // Clear input immediately for instant feedback
+    setNewMessage('')
+    
     // Stop typing indicator
     onStopTyping?.()
 
-    const success = await onSendMessage(newMessage)
-    if (success) {
-      setNewMessage('')
-      inputRef.current?.focus()
+    const success = await onSendMessage(messageToSend)
+    if (!success) {
+      // Restore message if sending failed
+      setNewMessage(messageToSend)
     }
+    
+    // Focus back to input
+    inputRef.current?.focus()
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,17 +283,48 @@ export function ModernChatInterface({
                     </div>
                   )}
                   
-                  <div
-                    className={cn(
-                      "px-4 py-2 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md",
-                      isOwn
-                        ? "bg-blue-600 text-white rounded-br-md"
-                        : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-bl-md border border-slate-200 dark:border-slate-700"
+                  <div className="relative group">
+                    <div
+                      className={cn(
+                        "px-4 py-2 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md",
+                        isOwn
+                          ? "bg-blue-600 text-white rounded-br-md"
+                          : "bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-bl-md border border-slate-200 dark:border-slate-700"
+                      )}
+                    >
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        {message.content}
+                      </p>
+                    </div>
+                    
+                    {/* Message Actions - Only show for own messages that can be deleted */}
+                    {message.canDelete && onDeleteMessage && (
+                      <div className={cn(
+                        "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                        isOwn ? "-left-8" : "-right-8"
+                      )}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-full"
+                            >
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                            <DropdownMenuItem
+                              onClick={() => onDeleteMessage(message.id)}
+                              className="text-red-600 dark:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete message
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     )}
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
                   </div>
                 </div>
               </div>

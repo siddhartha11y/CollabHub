@@ -26,6 +26,7 @@ export default function ChatPage() {
     messages, 
     sending, 
     sendMessage, 
+    deleteMessage,
     typingUsers, 
     handleTyping, 
     stopTyping, 
@@ -213,6 +214,7 @@ export default function ChatPage() {
               <ModernChatInterface
                 messages={messages}
                 onSendMessage={sendMessage}
+                onDeleteMessage={deleteMessage}
                 sending={sending}
                 channelName={activeChannel.name}
                 channelDescription={activeChannel.description}
