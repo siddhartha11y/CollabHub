@@ -56,6 +56,7 @@ export default function ProfilePage() {
         const response = await fetch("/api/profile")
         if (response.ok) {
           const data = await response.json()
+          console.log("Profile data received:", data)
           setProfile({
             name: data.name || session.user?.name || "",
             email: data.email || session.user?.email || "",
