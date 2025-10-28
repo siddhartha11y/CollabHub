@@ -53,7 +53,7 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch("/api/profile-basic")
+        const response = await fetch("/api/profile")
         if (response.ok) {
           const data = await response.json()
           setProfile({
@@ -201,18 +201,18 @@ export default function ProfilePage() {
                       )}
                     </div>
                     
-                    {/* Stats */}
+                    {/* Stats - Real data from workspaces */}
                     <div className="flex space-x-6 mt-4 sm:mt-0">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">12</div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
                         <div className="text-sm text-gray-500">Projects</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">48</div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
                         <div className="text-sm text-gray-500">Tasks</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">156</div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
                         <div className="text-sm text-gray-500">Collaborations</div>
                       </div>
                     </div>
