@@ -66,14 +66,14 @@ export default function Dashboard() {
             <TestNotificationButton />
             <SimpleNotificationBell />
             <ThemeToggle />
-            <div className="flex items-center space-x-2">
+            <Link href="/profile" className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-2 py-1 transition-colors">
               <img 
                 src={session.user?.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(session.user?.name || "User") + "&background=3b82f6&color=fff"} 
                 alt="Profile" 
                 className="h-8 w-8 rounded-full"
               />
               <span className="text-sm font-medium">{session.user?.name}</span>
-            </div>
+            </Link>
             <Button variant="outline" size="sm" onClick={() => signOut()}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
