@@ -53,7 +53,7 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch("/api/profile")
+        const response = await fetch("/api/profile-basic")
         if (response.ok) {
           const data = await response.json()
           setProfile({

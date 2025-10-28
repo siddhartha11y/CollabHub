@@ -63,7 +63,7 @@ export default function EditProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch("/api/profile")
+        const response = await fetch("/api/profile-basic")
         if (response.ok) {
           const data = await response.json()
           setProfile({
@@ -128,12 +128,15 @@ export default function EditProfilePage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const response = await fetch("/api/profile", {
+      const response = await fetch("/api/profile-basic", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({
+          name: profile.name,
+          image: profile.image
+        }),
       })
 
       if (response.ok) {
