@@ -192,14 +192,12 @@ export default function ProfilePage() {
                         {profile.name || "User"} 
                         <span className="ml-2 text-blue-500">✓</span>
                       </h1>
-                      {profile.title ? (
+                      {profile.title && (
                         <p className="text-lg text-gray-600 dark:text-gray-300 mt-1 flex items-center justify-center sm:justify-start">
                           <Briefcase className="h-4 w-4 mr-2" />
                           {profile.title}
                           {profile.company && ` at ${profile.company}`}
                         </p>
-                      ) : (
-                        <p className="text-gray-500 dark:text-gray-400 mt-1">Add your job title 💼</p>
                       )}
                     </div>
                     
@@ -220,13 +218,9 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   
-                  {profile.bio ? (
+                  {profile.bio && (
                     <p className="text-gray-600 dark:text-gray-300 mt-4 max-w-2xl leading-relaxed">
                       {profile.bio}
-                    </p>
-                  ) : (
-                    <p className="text-gray-500 dark:text-gray-400 mt-4 italic">
-                      Share something about yourself... 📝
                     </p>
                   )}
                   
@@ -257,132 +251,122 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Info Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Contact Information */}
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-6">
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                  <User className="h-5 w-5 text-white" />
+          {/* Info Cards Grid - Only show if there's data */}
+          {(profile.phone || profile.location || profile.website || profile.title || profile.company) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Contact Information - Only show if there's additional contact info */}
+              {(profile.phone || profile.location || profile.website) && (
+                <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white ml-3">Contact Info 📞</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
+                      <Mail className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Email</p>
+                        <p className="text-gray-900 dark:text-white">{profile.email}</p>
+                      </div>
+                    </div>
+                    
+                    {profile.phone && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
+                        <Phone className="h-5 w-5 text-green-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Phone</p>
+                          <p className="text-gray-900 dark:text-white">{profile.phone}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {profile.location && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
+                        <MapPin className="h-5 w-5 text-red-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Location</p>
+                          <p className="text-gray-900 dark:text-white">{profile.location}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {profile.website && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
+                        <Globe className="h-5 w-5 text-purple-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Website</p>
+                          <a 
+                            href={profile.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                          >
+                            {profile.website}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white ml-3">Contact Info 📞</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
-                  <Mail className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Email</p>
-                    <p className="text-gray-900 dark:text-white">{profile.email}</p>
-                  </div>
-                </div>
-                
-                {profile.phone ? (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
-                    <Phone className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Phone</p>
-                      <p className="text-gray-900 dark:text-white">{profile.phone}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/30 dark:bg-gray-700/30 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Add your phone number 📱</p>
-                    </div>
-                  </div>
-                )}
-                
-                {profile.location ? (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
-                    <MapPin className="h-5 w-5 text-red-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Location</p>
-                      <p className="text-gray-900 dark:text-white">{profile.location}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/30 dark:bg-gray-700/30 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <MapPin className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Add your location 🌍</p>
-                    </div>
-                  </div>
-                )}
-                
-                {profile.website ? (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
-                    <Globe className="h-5 w-5 text-purple-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Website</p>
-                      <a 
-                        href={profile.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-                      >
-                        {profile.website}
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/30 dark:bg-gray-700/30 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <Globe className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Add your website 🌐</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+              )}
 
-            {/* Professional Information */}
-            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-6">
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
-                  <Briefcase className="h-5 w-5 text-white" />
+              {/* Professional Information - Only show if there's work info */}
+              {(profile.title || profile.company) && (
+                <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+                      <Briefcase className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white ml-3">Work Info 💼</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {profile.title && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
+                        <Briefcase className="h-5 w-5 text-blue-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Job Title</p>
+                          <p className="text-gray-900 dark:text-white">{profile.title}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {profile.company && (
+                      <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
+                        <Building className="h-5 w-5 text-purple-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Company</p>
+                          <p className="text-gray-900 dark:text-white">{profile.company}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white ml-3">Work Info 💼</h3>
-              </div>
-              
-              <div className="space-y-4">
-                {profile.title ? (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
-                    <Briefcase className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Job Title</p>
-                      <p className="text-gray-900 dark:text-white">{profile.title}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/30 dark:bg-gray-700/30 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <Briefcase className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Add your job title 👔</p>
-                    </div>
-                  </div>
-                )}
-                
-                {profile.company ? (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/50 dark:bg-gray-700/50 rounded-xl">
-                    <Building className="h-5 w-5 text-purple-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Company</p>
-                      <p className="text-gray-900 dark:text-white">{profile.company}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50/30 dark:bg-gray-700/30 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <Building className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-500">Add your company 🏢</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {/* Empty State - Show when no additional info is available */}
+          {!profile.phone && !profile.location && !profile.website && !profile.title && !profile.company && !profile.bio && (
+            <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-12 text-center">
+              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Edit3 className="h-10 w-10 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Complete Your Profile</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
+                Add your bio, work information, and contact details to help others get to know you better.
+              </p>
+              <Link href="/profile/edit">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Complete Profile
+                </Button>
+              </Link>
+            </div>
+          )}
 
           {/* Preferences & Settings */}
           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 p-6">
