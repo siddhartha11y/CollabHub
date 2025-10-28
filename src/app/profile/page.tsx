@@ -180,6 +180,15 @@ export default function ProfilePage() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Status Banner */}
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>Profile System Status:</strong> Basic profile editing is live! Advanced fields (bio, job title, preferences) are coming soon after database migration.
+            </p>
+          </div>
+        </div>
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Profile Overview */}
           <div className="lg:col-span-1">
@@ -307,8 +316,9 @@ export default function ProfilePage() {
                     id="bio"
                     value={profile.bio}
                     onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                    placeholder="Tell us about yourself..."
+                    placeholder="Tell us about yourself... (Coming soon - database update needed)"
                     rows={3}
+                    disabled
                   />
                 </div>
 
@@ -319,7 +329,8 @@ export default function ProfilePage() {
                       id="title"
                       value={profile.title}
                       onChange={(e) => setProfile(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="e.g. Software Engineer"
+                      placeholder="Coming soon - database update needed"
+                      disabled
                     />
                   </div>
                   <div>
@@ -328,7 +339,8 @@ export default function ProfilePage() {
                       id="company"
                       value={profile.company}
                       onChange={(e) => setProfile(prev => ({ ...prev, company: e.target.value }))}
-                      placeholder="e.g. Tech Corp"
+                      placeholder="Coming soon - database update needed"
+                      disabled
                     />
                   </div>
                 </div>
@@ -355,7 +367,8 @@ export default function ProfilePage() {
                       type="tel"
                       value={profile.phone}
                       onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="Coming soon - database update needed"
+                      disabled
                     />
                   </div>
                   <div>
@@ -364,7 +377,8 @@ export default function ProfilePage() {
                       id="location"
                       value={profile.location}
                       onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
-                      placeholder="e.g. San Francisco, CA"
+                      placeholder="Coming soon - database update needed"
+                      disabled
                     />
                   </div>
                 </div>
@@ -376,7 +390,8 @@ export default function ProfilePage() {
                     type="url"
                     value={profile.website}
                     onChange={(e) => setProfile(prev => ({ ...prev, website: e.target.value }))}
-                    placeholder="https://yourwebsite.com"
+                    placeholder="Coming soon - database update needed"
+                    disabled
                   />
                 </div>
               </CardContent>

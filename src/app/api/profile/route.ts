@@ -37,18 +37,7 @@ export async function GET() {
         name: true,
         email: true,
         image: true,
-        bio: true,
-        title: true,
-        company: true,
-        location: true,
-        website: true,
-        phone: true,
-        timezone: true,
-        theme: true,
-        language: true,
-        emailNotifications: true,
         createdAt: true,
-        lastSeen: true,
       }
     })
 
@@ -94,20 +83,11 @@ export async function PUT(req: NextRequest) {
       )
     }
 
+    // For now, only update basic fields that exist in production
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         name: validatedData.name,
-        bio: validatedData.bio,
-        title: validatedData.title,
-        company: validatedData.company,
-        location: validatedData.location,
-        website: validatedData.website || null,
-        phone: validatedData.phone,
-        timezone: validatedData.timezone,
-        theme: validatedData.theme,
-        language: validatedData.language,
-        emailNotifications: validatedData.emailNotifications,
         image: validatedData.image,
         updatedAt: new Date(),
       },
@@ -116,16 +96,6 @@ export async function PUT(req: NextRequest) {
         name: true,
         email: true,
         image: true,
-        bio: true,
-        title: true,
-        company: true,
-        location: true,
-        website: true,
-        phone: true,
-        timezone: true,
-        theme: true,
-        language: true,
-        emailNotifications: true,
         createdAt: true,
         updatedAt: true,
       }
