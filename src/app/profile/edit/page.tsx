@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession, update } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -139,14 +139,6 @@ export default function EditProfilePage() {
       if (response.ok) {
         const updatedProfile = await response.json()
         
-        // Update session if name or image changed
-        if (profile.name !== session?.user?.name || profile.image !== session?.user?.image) {
-          await update({
-            name: profile.name,
-            image: profile.image,
-          })
-        }
-        
         alert("Profile updated successfully!")
         router.push("/profile")
       } else {
@@ -161,15 +153,53 @@ export default function EditProfilePage() {
     }
   }
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) {
+    if (!file) return
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB")
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please upload an image file")
+      return
+    }
+
+    try {
+      // Show loading state with preview
       const reader = new FileReader()
       reader.onload = (e) => {
         const result = e.target?.result as string
         setProfile(prev => ({ ...prev, image: result }))
       }
       reader.readAsDataURL(file)
+
+      // Upload to Supabase Storage
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('userId', session?.user?.email || '')
+
+      const uploadResponse = await fetch('/api/upload-profile-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image')
+      }
+
+      const { imageUrl } = await uploadResponse.json()
+      setProfile(prev => ({ ...prev, image: imageUrl }))
+      
+    } catch (error) {
+      console.error('Failed to upload image:', error)
+      alert('Failed to upload image. Please try again.')
+      // Revert to original image
+      setProfile(prev => ({ ...prev, image: session?.user?.image || "" }))
     }
   }
 
