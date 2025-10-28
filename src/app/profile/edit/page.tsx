@@ -67,8 +67,8 @@ export default function EditProfilePage() {
         if (response.ok) {
           const data = await response.json()
           setProfile({
-            name: data.name || "",
-            email: data.email || "",
+            name: data.name || session.user?.name || "",
+            email: data.email || session.user?.email || "",
             bio: data.bio || "",
             title: data.title || "",
             company: data.company || "",
@@ -79,11 +79,44 @@ export default function EditProfilePage() {
             theme: data.theme || "system",
             language: data.language || "en",
             emailNotifications: data.emailNotifications !== false,
-            image: data.image || ""
+            image: data.image || session.user?.image || ""
+          })
+        } else {
+          // If API fails, use session data as fallback
+          setProfile({
+            name: session.user?.name || "",
+            email: session.user?.email || "",
+            bio: "",
+            title: "",
+            company: "",
+            location: "",
+            website: "",
+            phone: "",
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            theme: "system",
+            language: "en",
+            emailNotifications: true,
+            image: session.user?.image || ""
           })
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error)
+        // Use session data as fallback on error
+        setProfile({
+          name: session.user?.name || "",
+          email: session.user?.email || "",
+          bio: "",
+          title: "",
+          company: "",
+          location: "",
+          website: "",
+          phone: "",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          theme: "system",
+          language: "en",
+          emailNotifications: true,
+          image: session.user?.image || ""
+        })
       } finally {
         setLoading(false)
       }
@@ -220,7 +253,7 @@ export default function EditProfilePage() {
                     id="name"
                     value={profile.name}
                     onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter your full name"
+                    placeholder="👤 Enter your full name"
                   />
                 </div>
                 <div>
@@ -242,7 +275,7 @@ export default function EditProfilePage() {
                   id="bio"
                   value={profile.bio}
                   onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
-                  placeholder="Tell us about yourself..."
+                  placeholder="✨ Tell us about yourself... What makes you unique? 🚀"
                   rows={3}
                 />
               </div>
@@ -268,7 +301,7 @@ export default function EditProfilePage() {
                     id="title"
                     value={profile.title}
                     onChange={(e) => setProfile(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter your job title"
+                    placeholder="💼 Software Engineer, Designer, Manager..."
                   />
                 </div>
                 <div>
@@ -277,7 +310,7 @@ export default function EditProfilePage() {
                     id="company"
                     value={profile.company}
                     onChange={(e) => setProfile(prev => ({ ...prev, company: e.target.value }))}
-                    placeholder="Enter your company name"
+                    placeholder="🏢 Google, Microsoft, Startup..."
                   />
                 </div>
               </div>
@@ -304,7 +337,7 @@ export default function EditProfilePage() {
                     type="tel"
                     value={profile.phone}
                     onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Enter your phone number"
+                    placeholder="📱 +1 (555) 123-4567"
                   />
                 </div>
                 <div>
@@ -313,7 +346,7 @@ export default function EditProfilePage() {
                     id="location"
                     value={profile.location}
                     onChange={(e) => setProfile(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="Enter your location"
+                    placeholder="🌍 New York, USA"
                   />
                 </div>
               </div>
@@ -325,7 +358,7 @@ export default function EditProfilePage() {
                   type="url"
                   value={profile.website}
                   onChange={(e) => setProfile(prev => ({ ...prev, website: e.target.value }))}
-                  placeholder="Enter your website URL"
+                  placeholder="🌐 https://yourwebsite.com"
                 />
               </div>
             </CardContent>
