@@ -1,33 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { z } from "zod"
-
-const updateProfileSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100),
-  bio: z.string().max(500).optional(),
-  title: z.string().max(100).optional(),
-  company: z.string().max(100).optional(),
-  location: z.string().max(100).optional(),
-  website: z.string().url().optional().or(z.literal("")),
-  phone: z.string().max(20).optional(),
-  timezone: z.string().optional(),
-  theme: z.enum(["light", "dark", "system"]).optional(),
-  language: z.string().optional(),
-  emailNotifications: z.boolean().optional(),
-  image: z.string().optional(),
-})
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -37,58 +18,76 @@ export async function GET() {
         name: true,
         email: true,
         image: true,
+        bio: true,
+        title: true,
+        company: true,
+        location: true,
+        website: true,
+        phone: true,
+        timezone: true,
+        theme: true,
+        language: true,
+        emailNotifications: true,
         createdAt: true,
+        updatedAt: true,
       }
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     return NextResponse.json(user)
   } catch (error) {
-    console.error("Get profile error:", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    console.error("Profile fetch error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const body = await req.json()
-    const validatedData = updateProfileSchema.parse(body)
+    const body = await request.json()
+    const {
+      name,
+      bio,
+      title,
+      company,
+      location,
+      website,
+      phone,
+      timezone,
+      theme,
+      language,
+      emailNotifications,
+      image
+    } = body
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      )
+    // Validate required fields
+    if (!name || name.trim() === "") {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 })
     }
 
-    // For now, only update basic fields that exist in production
     const updatedUser = await prisma.user.update({
-      where: { id: user.id },
+      where: { email: session.user.email },
       data: {
-        name: validatedData.name,
-        image: validatedData.image,
+        name: name.trim(),
+        bio: bio?.trim() || null,
+        title: title?.trim() || null,
+        company: company?.trim() || null,
+        location: location?.trim() || null,
+        website: website?.trim() || null,
+        phone: phone?.trim() || null,
+        timezone: timezone || null,
+        theme: theme || "system",
+        language: language || "en",
+        emailNotifications: emailNotifications !== false,
+        image: image || null,
         updatedAt: new Date(),
       },
       select: {
@@ -96,6 +95,16 @@ export async function PUT(req: NextRequest) {
         name: true,
         email: true,
         image: true,
+        bio: true,
+        title: true,
+        company: true,
+        location: true,
+        website: true,
+        phone: true,
+        timezone: true,
+        theme: true,
+        language: true,
+        emailNotifications: true,
         createdAt: true,
         updatedAt: true,
       }
@@ -103,17 +112,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(updatedUser)
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0].message },
-        { status: 400 }
-      )
-    }
-
-    console.error("Update profile error:", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    console.error("Profile update error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
