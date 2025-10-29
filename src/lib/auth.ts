@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { generateUsernameFromEmail } from "@/lib/username"
 
 export const authOptions: NextAuthOptions = {
   // Temporarily disable Prisma adapter to fix Google OAuth
@@ -76,11 +77,15 @@ export const authOptions: NextAuthOptions = {
         })
 
         if (!existingUser) {
+          // Generate username from email
+          const username = await generateUsernameFromEmail(user.email)
+          
           // Create new user
           await prisma.user.create({
             data: {
               email: user.email,
               name: user.name || "",
+              username: username,
               image: user.image || null,
               emailVerified: new Date(),
             },
