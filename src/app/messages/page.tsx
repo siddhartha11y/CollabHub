@@ -2,11 +2,11 @@ import { Metadata } from "next"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { StreamChatInterface } from "@/components/stream-chat-interface"
+import { MessagingInterface } from "@/components/messaging-interface"
 
 export const metadata: Metadata = {
   title: "Messages | CollabHub",
-  description: "Real-time chat with your team members",
+  description: "Chat with your team members",
 }
 
 export default async function MessagesPage() {
@@ -17,8 +17,8 @@ export default async function MessagesPage() {
   }
 
   return (
-    <div className="h-screen">
-      <StreamChatInterface />
+    <div className="h-screen flex flex-col">
+      <MessagingInterface />
     </div>
   )
 }
