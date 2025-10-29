@@ -42,6 +42,7 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
+  username      String?   @unique // Unique username for user identification
   emailVerified DateTime?
   image         String?
   password      String?   // For credentials login
@@ -89,6 +90,11 @@ model User {
   createdMeetings Meeting[] @relation("MeetingCreator")
   meetingActivitiesPerformed MeetingActivity[] @relation("MeetingActivityPerformer")
   meetingActivitiesAsOriginalCreator MeetingActivity[] @relation("MeetingActivityOriginalCreator")
+  
+  // Messaging relationships
+  sentMessages Message[] @relation("MessageSender")
+  conversations Conversation[] @relation("ConversationParticipants")
+  calls Call[] @relation("CallParticipants")
 }
 
 model VerificationToken {
@@ -392,4 +398,62 @@ enum MeetingAction {
   CREATED
   DELETED
   UPDATED
+}
+
+// Messaging System Models
+model Conversation {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  participants User[] @relation("ConversationParticipants")
+  messages    Message[]
+  calls       Call[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+  isRead         Boolean  @default(false)
+  isEdited       Boolean  @default(false)
+  isDeleted      Boolean  @default(false)
+  
+  senderId       String
+  sender         User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model Call {
+  id             String   @id @default(cuid())
+  type           CallType
+  status         CallStatus @default(PENDING)
+  startedAt      DateTime @default(now())
+  endedAt        DateTime?
+  duration       Int?     // Duration in seconds
+  
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  participants   User[] @relation("CallParticipants")
+  
+  @@index([conversationId])
+}
+
+enum CallType {
+  VOICE
+  VIDEO
+}
+
+enum CallStatus {
+  PENDING
+  ONGOING
+  COMPLETED
+  MISSED
+  REJECTED
 }
