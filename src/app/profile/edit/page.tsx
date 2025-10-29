@@ -153,13 +153,13 @@ export default function EditProfilePage() {
     }
   }
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB")
+    // Validate file size (max 2MB for better performance)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image size must be less than 2MB")
       return
     }
 
@@ -169,38 +169,47 @@ export default function EditProfilePage() {
       return
     }
 
-    try {
-      // Show loading state with preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        setProfile(prev => ({ ...prev, image: result }))
-      }
-      reader.readAsDataURL(file)
-
-      // Upload to Supabase Storage
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('userId', session?.user?.email || '')
-
-      const uploadResponse = await fetch('/api/upload-profile-image', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload image')
-      }
-
-      const { imageUrl } = await uploadResponse.json()
-      setProfile(prev => ({ ...prev, image: imageUrl }))
+    // Convert to base64 and compress
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result as string
       
-    } catch (error) {
-      console.error('Failed to upload image:', error)
-      alert('Failed to upload image. Please try again.')
-      // Revert to original image
-      setProfile(prev => ({ ...prev, image: session?.user?.image || "" }))
+      // Create an image to compress it
+      const img = new Image()
+      img.onload = () => {
+        // Create canvas to resize image
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        
+        // Calculate new dimensions (max 400x400)
+        let width = img.width
+        let height = img.height
+        const maxSize = 400
+        
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width
+            width = maxSize
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height
+            height = maxSize
+          }
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height)
+        const compressedImage = canvas.toDataURL('image/jpeg', 0.7)
+        
+        setProfile(prev => ({ ...prev, image: compressedImage }))
+      }
+      img.src = result
     }
+    reader.readAsDataURL(file)
   }
 
   if (loading) {
