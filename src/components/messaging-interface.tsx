@@ -54,8 +54,10 @@ export function MessagingInterface() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [loadingMessages, setLoadingMessages] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageCountRef = useRef(0)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     fetchConversations()
@@ -70,12 +72,23 @@ export function MessagingInterface() {
 
   useEffect(() => {
     if (selectedConversation) {
-      fetchMessages(selectedConversation)
-      // Faster polling - every 1 second for real-time feel
-      const interval = setInterval(() => {
+      setLoadingMessages(true)
+      fetchMessages(selectedConversation).finally(() => setLoadingMessages(false))
+      
+      // Aggressive polling - every 500ms for near real-time
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+      
+      pollingIntervalRef.current = setInterval(() => {
         fetchMessages(selectedConversation, true)
-      }, 1000)
-      return () => clearInterval(interval)
+      }, 500)
+      
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+        }
+      }
     }
   }, [selectedConversation])
 
@@ -214,7 +227,14 @@ export function MessagingInterface() {
   const otherUser = selectedConv ? getOtherParticipant(selectedConv) : null
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading conversations...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -340,7 +360,15 @@ export function MessagingInterface() {
 
           {/* Messages - Instagram Style (no own avatar) */}
           <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+            {loadingMessages && messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                  <p className="text-muted-foreground text-sm">Loading messages...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
               {messages.map((message) => {
                 const isOwn = message.sender.id === session?.user?.id
                 
@@ -381,8 +409,9 @@ export function MessagingInterface() {
                   </div>
                 )
               })}
-              <div ref={messagesEndRef} />
-            </div>
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </ScrollArea>
 
           {/* Message Input */}
