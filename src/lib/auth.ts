@@ -168,9 +168,9 @@ export const authOptions: NextAuthOptions = {
         return session
       }
     },
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, trigger, session }) {
       try {
-        // Initial sign in - get data from database
+        // Initial sign in - get minimal data from database
         if (user) {
           const dbUser = await prisma.user.findUnique({
             where: { email: user.email! },
@@ -179,7 +179,6 @@ export const authOptions: NextAuthOptions = {
               name: true,
               email: true,
               image: true,
-              username: true,
             },
           })
 
@@ -189,14 +188,12 @@ export const authOptions: NextAuthOptions = {
               name: dbUser.name,
               email: dbUser.email,
               picture: dbUser.image,
-              username: dbUser.username,
             }
           }
         }
 
-        // On subsequent requests, always fetch fresh data from database
-        // This ensures profile updates are reflected immediately
-        if (token.email) {
+        // Only refresh on update trigger (profile changes)
+        if (trigger === "update" && token.email) {
           const dbUser = await prisma.user.findFirst({
             where: {
               email: token.email,
@@ -206,7 +203,6 @@ export const authOptions: NextAuthOptions = {
               name: true,
               email: true,
               image: true,
-              username: true,
             },
           })
 
@@ -216,7 +212,6 @@ export const authOptions: NextAuthOptions = {
               name: dbUser.name,
               email: dbUser.email,
               picture: dbUser.image,
-              username: dbUser.username,
             }
           }
         }

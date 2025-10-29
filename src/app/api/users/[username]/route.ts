@@ -17,11 +17,11 @@ export async function GET(
     const { username } = params
 
     if (!username) {
-      return NextResponse.json({ error: "Username is required" }, { status: 400 })
+      return NextResponse.json({ error: "Username or ID is required" }, { status: 400 })
     }
 
-    // Find user by username
-    const user = await prisma.user.findUnique({
+    // Find user by username OR by ID (fallback)
+    let user = await prisma.user.findUnique({
       where: { username },
       select: {
         id: true,
@@ -38,6 +38,27 @@ export async function GET(
         createdAt: true,
       },
     })
+
+    // If not found by username, try by ID
+    if (!user) {
+      user = await prisma.user.findUnique({
+        where: { id: username },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          email: true,
+          image: true,
+          bio: true,
+          title: true,
+          company: true,
+          location: true,
+          website: true,
+          phone: true,
+          createdAt: true,
+        },
+      })
+    }
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })

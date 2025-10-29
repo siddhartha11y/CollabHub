@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 interface SearchResult {
   id: string
   name: string
-  username: string
+  username: string | null
   email: string
   image: string | null
 }
@@ -59,8 +59,10 @@ export function UserSearch() {
     return () => clearTimeout(debounce)
   }, [query])
 
-  const handleUserClick = (username: string) => {
-    router.push(`/users/${username}`)
+  const handleUserClick = (username: string | null, userId: string) => {
+    // Use username if available, otherwise use user ID
+    const identifier = username || userId
+    router.push(`/users/${identifier}`)
     setQuery("")
     setIsOpen(false)
   }
@@ -103,7 +105,7 @@ export function UserSearch() {
               {results.map((user) => (
                 <button
                   key={user.id}
-                  onClick={() => handleUserClick(user.username)}
+                  onClick={() => handleUserClick(user.username, user.id)}
                   className="w-full px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
                 >
                   <img
@@ -113,7 +115,7 @@ export function UserSearch() {
                   />
                   <div className="flex-1 text-left">
                     <p className="font-medium text-gray-900 dark:text-white">{user.name}</p>
-                    <p className="text-sm text-gray-500">@{user.username}</p>
+                    <p className="text-sm text-gray-500">{user.username ? `@${user.username}` : user.email}</p>
                   </div>
                   <User className="h-4 w-4 text-gray-400" />
                 </button>
