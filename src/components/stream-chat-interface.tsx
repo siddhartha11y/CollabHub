@@ -38,10 +38,11 @@ export function StreamChatInterface() {
 
         const chatClient = StreamChat.getInstance(apiKey)
 
+        // Connect with minimal user data (Stream has 5KB limit)
         await chatClient.connectUser(
           {
             id: userId,
-            name: userName,
+            name: userName || 'User',
             image: userImage,
           },
           token

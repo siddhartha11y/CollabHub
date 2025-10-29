@@ -25,14 +25,19 @@ export async function GET(request: NextRequest) {
     // Use email as user ID (unique and consistent)
     const userId = session.user.email.replace(/[^a-zA-Z0-9_-]/g, '_')
     
+    // Create token with minimal user data (Stream has 5KB limit)
     const token = serverClient.createToken(userId)
+
+    // Generate avatar URL
+    const userName = session.user.name || session.user.email.split('@')[0]
+    const userImage = session.user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&size=128`
 
     return NextResponse.json({ 
       token,
       userId,
       apiKey,
-      userName: session.user.name || session.user.email,
-      userImage: session.user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name || 'User')}&background=3b82f6&color=fff`,
+      userName,
+      userImage,
     })
   } catch (error) {
     console.error("Stream token error:", error)
