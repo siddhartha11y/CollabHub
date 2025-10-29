@@ -157,9 +157,9 @@ export const authOptions: NextAuthOptions = {
         return session
       }
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       try {
-        // Initial sign in
+        // Initial sign in - get data from database
         if (user) {
           const dbUser = await prisma.user.findUnique({
             where: { email: user.email! },
@@ -168,6 +168,7 @@ export const authOptions: NextAuthOptions = {
               name: true,
               email: true,
               image: true,
+              username: true,
             },
           })
 
@@ -177,35 +178,39 @@ export const authOptions: NextAuthOptions = {
               name: dbUser.name,
               email: dbUser.email,
               picture: dbUser.image,
+              username: dbUser.username,
             }
           }
         }
 
-        // Return previous token if user is not available
-        if (!token.email) return token
+        // On subsequent requests, always fetch fresh data from database
+        // This ensures profile updates are reflected immediately
+        if (token.email) {
+          const dbUser = await prisma.user.findFirst({
+            where: {
+              email: token.email,
+            },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              username: true,
+            },
+          })
 
-        const dbUser = await prisma.user.findFirst({
-          where: {
-            email: token.email,
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        })
-
-        if (!dbUser) {
-          return token
+          if (dbUser) {
+            return {
+              id: dbUser.id,
+              name: dbUser.name,
+              email: dbUser.email,
+              picture: dbUser.image,
+              username: dbUser.username,
+            }
+          }
         }
 
-        return {
-          id: dbUser.id,
-          name: dbUser.name,
-          email: dbUser.email,
-          picture: dbUser.image,
-        }
+        return token
       } catch (error) {
         console.error("JWT callback error:", error)
         return token

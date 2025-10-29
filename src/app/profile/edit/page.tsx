@@ -41,6 +41,7 @@ export default function EditProfilePage() {
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState({
     name: "",
+    username: "",
     email: "",
     bio: "",
     title: "",
@@ -68,6 +69,7 @@ export default function EditProfilePage() {
           const data = await response.json()
           setProfile({
             name: data.name || session.user?.name || "",
+            username: data.username || "",
             email: data.email || session.user?.email || "",
             bio: data.bio || "",
             title: data.title || "",
@@ -85,6 +87,7 @@ export default function EditProfilePage() {
           // If API fails, use session data as fallback
           setProfile({
             name: session.user?.name || "",
+            username: "",
             email: session.user?.email || "",
             bio: "",
             title: "",
@@ -104,6 +107,7 @@ export default function EditProfilePage() {
         // Use session data as fallback on error
         setProfile({
           name: session.user?.name || "",
+          username: "",
           email: session.user?.email || "",
           bio: "",
           title: "",
@@ -296,16 +300,28 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={profile.email}
-                    disabled
-                    className="bg-gray-50 dark:bg-gray-800"
+                    id="username"
+                    value={profile.username}
+                    onChange={(e) => setProfile(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
+                    placeholder="@username (3-20 characters)"
+                    maxLength={20}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  <p className="text-xs text-gray-500 mt-1">Lowercase letters, numbers, and underscores only</p>
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profile.email}
+                  disabled
+                  className="bg-gray-50 dark:bg-gray-800"
+                />
+                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
               </div>
 
               <div>

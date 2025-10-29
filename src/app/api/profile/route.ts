@@ -19,6 +19,7 @@ export async function GET() {
         select: {
           id: true,
           name: true,
+          username: true,
           email: true,
           image: true,
           bio: true,
@@ -125,6 +126,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const {
       name,
+      username,
       bio,
       title,
       company,
@@ -150,6 +152,7 @@ export async function PUT(request: NextRequest) {
         where: { email: session.user.email },
         data: {
           name: name.trim(),
+          username: username?.trim() || null,
           bio: bio?.trim() || null,
           title: title?.trim() || null,
           company: company?.trim() || null,
@@ -166,6 +169,7 @@ export async function PUT(request: NextRequest) {
         select: {
           id: true,
           name: true,
+          username: true,
           email: true,
           image: true,
           bio: true,
