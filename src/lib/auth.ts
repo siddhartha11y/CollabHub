@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
           // Generate username from email
           const username = await generateUsernameFromEmail(user.email)
           
-          // Create new user
+          // Create new user - ONLY for new users, use Google data
           await prisma.user.create({
             data: {
               email: user.email,
@@ -91,14 +91,25 @@ export const authOptions: NextAuthOptions = {
             },
           })
         } else {
-          // Update existing user's name and image if they changed
-          await prisma.user.update({
-            where: { email: user.email },
-            data: {
-              name: user.name || existingUser.name,
-              image: user.image || existingUser.image,
-            },
-          })
+          // EXISTING USER: DO NOT overwrite their profile data
+          // Only update if they have NO name or NO image (empty profile)
+          const updateData: any = {}
+          
+          if (!existingUser.name || existingUser.name.trim() === "") {
+            updateData.name = user.name
+          }
+          
+          if (!existingUser.image || existingUser.image.trim() === "") {
+            updateData.image = user.image
+          }
+          
+          // Only update if there's something to update
+          if (Object.keys(updateData).length > 0) {
+            await prisma.user.update({
+              where: { email: user.email },
+              data: updateData,
+            })
+          }
         }
 
         // Handle account linking for OAuth providers

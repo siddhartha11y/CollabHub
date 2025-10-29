@@ -24,7 +24,7 @@ import {
 import Link from "next/link"
 
 export default function ProfilePage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState({
@@ -46,6 +46,11 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
+    // Wait for session to load
+    if (status === "loading") {
+      return
+    }
+    
     if (!session) {
       router.push("/auth/signin")
       return
@@ -120,9 +125,9 @@ export default function ProfilePage() {
     }
 
     fetchProfile()
-  }, [session, router])
+  }, [session, status, router])
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
