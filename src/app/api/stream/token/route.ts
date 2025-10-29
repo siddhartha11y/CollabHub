@@ -22,15 +22,16 @@ export async function GET(request: NextRequest) {
 
     const serverClient = StreamChat.getInstance(apiKey, apiSecret)
 
-    // Use email as user ID (unique and consistent)
-    const userId = session.user.email.replace(/[^a-zA-Z0-9_-]/g, '_')
+    // Create simple user ID from email (hash to keep it short)
+    const emailHash = Buffer.from(session.user.email).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')
+    const userId = `user_${emailHash}`
     
-    // Create token with minimal user data (Stream has 5KB limit)
+    // Create token with NO extra user data (Stream has 5KB limit)
     const token = serverClient.createToken(userId)
 
-    // Generate avatar URL
-    const userName = session.user.name || session.user.email.split('@')[0]
-    const userImage = session.user.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3b82f6&color=fff&size=128`
+    // Minimal user info
+    const userName = session.user.name?.substring(0, 30) || session.user.email.split('@')[0]
+    const userImage = session.user.image || null
 
     return NextResponse.json({ 
       token,

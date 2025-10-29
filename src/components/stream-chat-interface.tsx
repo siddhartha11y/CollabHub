@@ -38,15 +38,18 @@ export function StreamChatInterface() {
 
         const chatClient = StreamChat.getInstance(apiKey)
 
-        // Connect with minimal user data (Stream has 5KB limit)
-        await chatClient.connectUser(
-          {
-            id: userId,
-            name: userName || 'User',
-            image: userImage,
-          },
-          token
-        )
+        // Connect with MINIMAL user data (Stream has 5KB limit)
+        const userObject: any = {
+          id: userId,
+          name: userName || 'User',
+        }
+        
+        // Only add image if it exists and is short
+        if (userImage && userImage.length < 200) {
+          userObject.image = userImage
+        }
+        
+        await chatClient.connectUser(userObject, token)
 
         setClient(chatClient)
       } catch (err) {
