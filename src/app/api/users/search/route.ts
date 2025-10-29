@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
           { username: { contains: query, mode: "insensitive" } },
           { email: { contains: query, mode: "insensitive" } },
         ],
-        // Exclude current user from results
+        // Exclude current user
         NOT: {
           email: session.user.email,
         },
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         email: true,
         image: true,
       },
-      take: 10, // Limit to 10 results
+      take: 10,
     })
 
     return NextResponse.json({ users })

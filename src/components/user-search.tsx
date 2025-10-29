@@ -68,10 +68,10 @@ export function UserSearch() {
   return (
     <div ref={searchRef} className="relative w-full max-w-md">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
         <Input
           type="text"
-          placeholder="Search users by name, username, or email..."
+          placeholder="Search users..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setIsOpen(true)}
@@ -84,16 +84,16 @@ export function UserSearch() {
               setResults([])
               setIsOpen(false)
             }}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 z-10"
           >
             <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {/* Search Results Dropdown */}
+      {/* Search Results Dropdown - FIXED POSITION */}
       {isOpen && (
-        <div className="absolute top-full mt-2 w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-[100]">
+        <div className="fixed left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[500px] overflow-y-auto z-[9999]" style={{ top: 'calc(4rem + 0.5rem)' }}>
           {loading ? (
             <div className="p-4 text-center text-gray-500">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
