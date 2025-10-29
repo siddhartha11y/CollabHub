@@ -1,0 +1,115 @@
+/* Stream Chat Custom Styles */
+
+.str-chat {
+  height: 100vh;
+}
+
+.str-chat__channel-list {
+  width: 320px;
+  border-right: 1px solid hsl(var(--border));
+}
+
+.str-chat__channel-preview-messenger {
+  padding: 12px 16px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.str-chat__channel-preview-messenger:hover {
+  background-color: hsl(var(--accent));
+}
+
+.str-chat__channel-preview-messenger--active {
+  background-color: hsl(var(--accent));
+}
+
+.str-chat__message-simple {
+  padding: 8px 16px;
+}
+
+.str-chat__message-simple-text-inner {
+  border-radius: 16px;
+  padding: 10px 14px;
+}
+
+.str-chat__message-simple--me .str-chat__message-simple-text-inner {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text-inner {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.str-chat__input-flat {
+  border-top: 1px solid hsl(var(--border));
+  padding: 16px;
+}
+
+.str-chat__channel-header {
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 16px;
+}
+
+/* Hide own avatar (Instagram style) */
+.str-chat__message-simple--me .str-chat__avatar {
+  display: none;
+}
+
+/* Typing indicator */
+.str-chat__typing-indicator {
+  padding: 8px 16px;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+}
+
+/* Online status */
+.str-chat__avatar--online::after {
+  background-color: #22c55e;
+  border: 2px solid hsl(var(--background));
+}
+
+/* Message input */
+.str-chat__textarea textarea {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 24px;
+  padding: 10px 16px;
+  color: hsl(var(--foreground));
+}
+
+.str-chat__textarea textarea:focus {
+  border-color: hsl(var(--primary));
+  outline: none;
+}
+
+/* Send button */
+.str-chat__send-button {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+}
+
+.str-chat__send-button:hover {
+  opacity: 0.9;
+}
+
+/* Scrollbar */
+.str-chat__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.str-chat__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
