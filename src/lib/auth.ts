@@ -65,35 +65,51 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async session({ token, session }) {
-      if (token) {
-        session.user.id = token.id as string
-        session.user.name = token.name as string | null
-        session.user.email = token.email as string | null
-        session.user.image = token.picture as string | null
+      try {
+        if (token) {
+          session.user.id = token.id as string
+          session.user.name = token.name as string | null
+          session.user.email = token.email as string | null
+          session.user.image = token.picture as string | null
+        }
+        return session
+      } catch (error) {
+        console.error("Session callback error:", error)
+        return session
       }
-      return session
     },
     async jwt({ token, user }) {
-      if (!token.email) return token
-      
-      const dbUser = await prisma.user.findFirst({
-        where: {
-          email: token.email,
-        },
-      })
+      try {
+        if (!token.email) return token
+        
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            email: token.email,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          }
+        })
 
-      if (!dbUser) {
-        if (user) {
-          token.id = user?.id
+        if (!dbUser) {
+          if (user) {
+            token.id = user?.id
+          }
+          return token
         }
-        return token
-      }
 
-      return {
-        id: dbUser.id,
-        name: dbUser.name,
-        email: dbUser.email,
-        picture: dbUser.image,
+        return {
+          id: dbUser.id,
+          name: dbUser.name,
+          email: dbUser.email,
+          picture: dbUser.image,
+        }
+      } catch (error) {
+        console.error("JWT callback error:", error)
+        return token
       }
     },
   },
@@ -102,5 +118,17 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+  },
+  debug: process.env.NODE_ENV === "development",
+  logger: {
+    error(code, metadata) {
+      console.error("NextAuth Error:", code, metadata)
+    },
+    warn(code) {
+      console.warn("NextAuth Warning:", code)
+    },
+    debug(code, metadata) {
+      console.log("NextAuth Debug:", code, metadata)
+    },
   },
 }
