@@ -53,29 +53,54 @@ export function MessagingInterface() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const lastMessageCountRef = useRef(0)
 
   useEffect(() => {
     fetchConversations()
+    // Update online status
+    updateOnlineStatus(true)
+    
+    // Cleanup on unmount
+    return () => {
+      updateOnlineStatus(false)
+    }
   }, [])
 
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation)
-      // Poll for new messages every 3 seconds
+      // Faster polling - every 1 second for real-time feel
       const interval = setInterval(() => {
-        fetchMessages(selectedConversation)
-      }, 3000)
+        fetchMessages(selectedConversation, true)
+      }, 1000)
       return () => clearInterval(interval)
     }
   }, [selectedConversation])
 
   useEffect(() => {
-    scrollToBottom()
+    // Only scroll if new messages arrived
+    if (messages.length > lastMessageCountRef.current) {
+      scrollToBottom()
+      lastMessageCountRef.current = messages.length
+    }
   }, [messages])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const updateOnlineStatus = async (isOnline: boolean) => {
+    try {
+      await fetch("/api/user/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isOnline }),
+      })
+    } catch (error) {
+      console.error("Failed to update online status:", error)
+    }
   }
 
   const fetchConversations = async () => {
@@ -92,7 +117,7 @@ export function MessagingInterface() {
     }
   }
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = async (conversationId: string, silent = false) => {
     try {
       const res = await fetch(`/api/conversations/${conversationId}/messages`)
       if (res.ok) {
@@ -100,28 +125,59 @@ export function MessagingInterface() {
         setMessages(data)
       }
     } catch (error) {
-      console.error("Failed to fetch messages:", error)
+      if (!silent) {
+        console.error("Failed to fetch messages:", error)
+      }
     }
   }
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return
+    if (!newMessage.trim() || !selectedConversation || sending) return
+
+    const messageContent = newMessage.trim()
+    const tempId = `temp-${Date.now()}`
+    
+    // Optimistic update - add message immediately
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: messageContent,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      sender: {
+        id: session?.user?.id || "",
+        name: session?.user?.name || null,
+        image: session?.user?.image || null,
+      },
+    }
+    
+    setMessages(prev => [...prev, optimisticMessage])
+    setNewMessage("")
+    setShowEmojiPicker(false)
+    setSending(true)
 
     try {
       const res = await fetch(`/api/conversations/${selectedConversation}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newMessage }),
+        body: JSON.stringify({ content: messageContent }),
       })
 
       if (res.ok) {
-        setNewMessage("")
-        setShowEmojiPicker(false)
-        fetchMessages(selectedConversation)
+        // Replace temp message with real one
+        const realMessage = await res.json()
+        setMessages(prev => prev.map(m => m.id === tempId ? realMessage : m))
         fetchConversations() // Update conversation list
+      } else {
+        // Remove optimistic message on error
+        setMessages(prev => prev.filter(m => m.id !== tempId))
+        setNewMessage(messageContent) // Restore message
       }
     } catch (error) {
       console.error("Failed to send message:", error)
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      setNewMessage(messageContent)
+    } finally {
+      setSending(false)
     }
   }
 
@@ -282,7 +338,7 @@ export function MessagingInterface() {
             </div>
           </div>
 
-          {/* Messages */}
+          {/* Messages - Instagram Style (no own avatar) */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((message) => {
@@ -293,19 +349,22 @@ export function MessagingInterface() {
                     key={message.id}
                     className={cn(
                       "flex gap-3",
-                      isOwn && "flex-row-reverse"
+                      isOwn ? "flex-row-reverse" : ""
                     )}
                   >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={message.sender.image || undefined} />
-                      <AvatarFallback>
-                        {message.sender.name?.[0] || "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                    {/* Only show avatar for other user (Instagram style) */}
+                    {!isOwn && (
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={message.sender.image || undefined} />
+                        <AvatarFallback>
+                          {message.sender.name?.[0] || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                     <div className={cn("flex flex-col gap-1", isOwn && "items-end")}>
                       <div
                         className={cn(
-                          "rounded-lg px-4 py-2 max-w-md",
+                          "rounded-2xl px-4 py-2 max-w-md",
                           isOwn
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
@@ -340,6 +399,7 @@ export function MessagingInterface() {
                       sendMessage()
                     }
                   }}
+                  disabled={sending}
                   className="pr-10"
                 />
                 <Button
@@ -361,7 +421,7 @@ export function MessagingInterface() {
                   </div>
                 )}
               </div>
-              <Button onClick={sendMessage} size="icon">
+              <Button onClick={sendMessage} size="icon" disabled={sending || !newMessage.trim()}>
                 <Send className="h-5 w-5" />
               </Button>
             </div>

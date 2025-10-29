@@ -11,6 +11,7 @@ import Link from "next/link"
 import { SimpleNotificationBell } from "@/components/simple-notification-bell"
 import { TestNotificationButton } from "@/components/test-notification-button"
 import { UserSearch } from "@/components/user-search"
+import { MessageNotificationBadge } from "@/components/message-notification-badge"
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
@@ -70,11 +71,7 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <Link href="/messages">
-                <Button variant="ghost" size="icon" title="Messages">
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
-              </Link>
+              <MessageNotificationBadge />
               <TestNotificationButton />
               <SimpleNotificationBell />
               <ThemeToggle />
