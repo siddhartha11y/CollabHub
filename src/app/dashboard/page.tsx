@@ -4,12 +4,13 @@ import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Users, Plus, Settings, LogOut } from "lucide-react"
+import { Users, Plus, Settings, LogOut, MessageCircle } from "lucide-react"
 import { redirect } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { SimpleNotificationBell } from "@/components/simple-notification-bell"
 import { TestNotificationButton } from "@/components/test-notification-button"
+import { UserSearch } from "@/components/user-search"
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
@@ -56,28 +57,40 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Users className="h-8 w-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">CollabHub</h1>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <TestNotificationButton />
-            <SimpleNotificationBell />
-            <ThemeToggle />
-            <Link href="/profile" className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-2 py-1 transition-colors">
-              <img 
-                src={session.user?.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(session.user?.name || "User") + "&background=3b82f6&color=fff"} 
-                alt="Profile" 
-                className="h-8 w-8 rounded-full"
-              />
-              <span className="text-sm font-medium">{session.user?.name}</span>
-            </Link>
-            <Button variant="outline" size="sm" onClick={() => signOut()}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-8 w-8 text-blue-600" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">CollabHub</h1>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="flex-1 max-w-2xl mx-4">
+              <UserSearch />
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <Link href="/messages">
+                <Button variant="ghost" size="icon" title="Messages">
+                  <MessageCircle className="h-5 w-5" />
+                </Button>
+              </Link>
+              <TestNotificationButton />
+              <SimpleNotificationBell />
+              <ThemeToggle />
+              <Link href="/profile" className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-2 py-1 transition-colors">
+                <img 
+                  src={session.user?.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(session.user?.name || "User") + "&background=3b82f6&color=fff"} 
+                  alt="Profile" 
+                  className="h-8 w-8 rounded-full"
+                />
+                <span className="text-sm font-medium">{session.user?.name}</span>
+              </Link>
+              <Button variant="outline" size="sm" onClick={() => signOut()}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </header>
