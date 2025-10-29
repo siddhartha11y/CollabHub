@@ -7,7 +7,8 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // Temporarily disable Prisma adapter to fix Google OAuth
+  // adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -64,6 +65,78 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      try {
+        if (!user.email) return false
+
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        })
+
+        if (!existingUser) {
+          // Create new user
+          await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name || "",
+              image: user.image || null,
+              emailVerified: new Date(),
+            },
+          })
+        } else {
+          // Update existing user's name and image if they changed
+          await prisma.user.update({
+            where: { email: user.email },
+            data: {
+              name: user.name || existingUser.name,
+              image: user.image || existingUser.image,
+            },
+          })
+        }
+
+        // Handle account linking for OAuth providers
+        if (account && account.provider !== "credentials") {
+          const existingAccount = await prisma.account.findUnique({
+            where: {
+              provider_providerAccountId: {
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+              },
+            },
+          })
+
+          if (!existingAccount) {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: user.email },
+            })
+
+            if (dbUser) {
+              await prisma.account.create({
+                data: {
+                  userId: dbUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  refresh_token: account.refresh_token,
+                  access_token: account.access_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token,
+                  session_state: account.session_state,
+                },
+              })
+            }
+          }
+        }
+
+        return true
+      } catch (error) {
+        console.error("SignIn callback error:", error)
+        return false
+      }
+    },
     async session({ token, session }) {
       try {
         if (token) {
@@ -78,10 +151,33 @@ export const authOptions: NextAuthOptions = {
         return session
       }
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       try {
+        // Initial sign in
+        if (user) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          })
+
+          if (dbUser) {
+            return {
+              id: dbUser.id,
+              name: dbUser.name,
+              email: dbUser.email,
+              picture: dbUser.image,
+            }
+          }
+        }
+
+        // Return previous token if user is not available
         if (!token.email) return token
-        
+
         const dbUser = await prisma.user.findFirst({
           where: {
             email: token.email,
@@ -91,13 +187,10 @@ export const authOptions: NextAuthOptions = {
             name: true,
             email: true,
             image: true,
-          }
+          },
         })
 
         if (!dbUser) {
-          if (user) {
-            token.id = user?.id
-          }
           return token
         }
 
