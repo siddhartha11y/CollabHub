@@ -24,10 +24,15 @@ export function StreamChatInterface() {
 
   useEffect(() => {
     const initChat = async () => {
-      if (!session?.user) return
+      if (!session?.user?.email) return
 
       try {
-        const response = await fetch("/api/stream/token")
+        // Send email in POST body (not in session cookie)
+        const response = await fetch("/api/stream/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: session.user.email }),
+        })
         
         if (!response.ok) {
           const errorData = await response.json()
@@ -38,18 +43,15 @@ export function StreamChatInterface() {
 
         const chatClient = StreamChat.getInstance(apiKey)
 
-        // Connect with MINIMAL user data (Stream has 5KB limit)
-        const userObject: any = {
-          id: userId,
-          name: userName || 'User',
-        }
-        
-        // Only add image if it exists and is short
-        if (userImage && userImage.length < 200) {
-          userObject.image = userImage
-        }
-        
-        await chatClient.connectUser(userObject, token)
+        // Connect with ABSOLUTE MINIMAL data
+        await chatClient.connectUser(
+          {
+            id: userId,
+            name: userName,
+            image: userImage,
+          },
+          token
+        )
 
         setClient(chatClient)
       } catch (err) {

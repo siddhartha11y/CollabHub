@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
 import { StreamChat } from "stream-chat"
+import { prisma } from "@/lib/prisma"
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    // Get user email from request body (not from session to avoid 5KB limit)
+    const { email } = await request.json()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!email) {
+      return NextResponse.json({ error: "Email required" }, { status: 400 })
+    }
+
+    // Verify user exists in database
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+      },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY
@@ -16,29 +31,25 @@ export async function GET(request: NextRequest) {
 
     if (!apiKey || !apiSecret) {
       return NextResponse.json({ 
-        error: "Stream API credentials not configured. Please add NEXT_PUBLIC_STREAM_API_KEY and STREAM_API_SECRET to .env.local" 
+        error: "Stream API credentials not configured" 
       }, { status: 500 })
     }
 
     const serverClient = StreamChat.getInstance(apiKey, apiSecret)
 
-    // Create simple user ID from email (hash to keep it short)
-    const emailHash = Buffer.from(session.user.email).toString('base64').substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')
-    const userId = `user_${emailHash}`
+    // Use database ID as Stream user ID (guaranteed unique and short)
+    const userId = user.id
     
-    // Create token with NO extra user data (Stream has 5KB limit)
+    // Create token with ZERO extra data
     const token = serverClient.createToken(userId)
 
-    // Minimal user info
-    const userName = session.user.name?.substring(0, 30) || session.user.email.split('@')[0]
-    const userImage = session.user.image || null
-
+    // Return minimal data
     return NextResponse.json({ 
       token,
       userId,
       apiKey,
-      userName,
-      userImage,
+      userName: user.name || user.email.split('@')[0],
+      userImage: user.image,
     })
   } catch (error) {
     console.error("Stream token error:", error)
