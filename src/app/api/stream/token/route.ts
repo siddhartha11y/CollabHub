@@ -43,13 +43,14 @@ export async function POST(request: NextRequest) {
     // Create token with ZERO extra data
     const token = serverClient.createToken(userId)
 
-    // Return minimal data
+    // Return ABSOLUTE minimal data (no image)
+    const shortName = (user.name || user.email.split('@')[0]).substring(0, 20)
+    
     return NextResponse.json({ 
       token,
       userId,
       apiKey,
-      userName: user.name || user.email.split('@')[0],
-      userImage: user.image,
+      userName: shortName,
     })
   } catch (error) {
     console.error("Stream token error:", error)

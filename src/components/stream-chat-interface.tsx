@@ -39,16 +39,15 @@ export function StreamChatInterface() {
           throw new Error(errorData.error || "Failed to get Stream token")
         }
 
-        const { token, userId, apiKey, userName, userImage } = await response.json()
+        const { token, userId, apiKey, userName } = await response.json()
 
         const chatClient = StreamChat.getInstance(apiKey)
 
-        // Connect with ABSOLUTE MINIMAL data
+        // Connect with ABSOLUTE MINIMAL data (no image to reduce size)
         await chatClient.connectUser(
           {
             id: userId,
             name: userName,
-            image: userImage,
           },
           token
         )
