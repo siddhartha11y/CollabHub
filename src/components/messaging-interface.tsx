@@ -6,10 +6,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Phone, Video, Send, Smile, Search, MoreVertical } from "lucide-react"
+import { Phone, Video, Send, Smile, Search, MoreVertical, Info, Image as ImageIcon, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { EmojiPicker } from "@/components/emoji-picker"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns"
 
 interface Conversation {
   id: string
@@ -226,121 +226,141 @@ export function MessagingInterface() {
   const selectedConv = conversations.find(c => c.id === selectedConversation)
   const otherUser = selectedConv ? getOtherParticipant(selectedConv) : null
 
+  const formatMessageTime = (date: Date) => {
+    if (isToday(date)) {
+      return format(date, "h:mm a")
+    } else if (isYesterday(date)) {
+      return "Yesterday"
+    } else {
+      return format(date, "MMM d")
+    }
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-black">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Loading conversations...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0095f6]"></div>
+          <p className="text-gray-400">Loading conversations...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Conversations List */}
-      <div className="w-80 border-r flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="text-xl font-semibold mb-3">Messages</h2>
+    <div className="flex h-screen bg-black text-white">
+      {/* Conversations List - Instagram Style */}
+      <div className="w-[350px] border-r border-[#262626] flex flex-col">
+        {/* Header */}
+        <div className="p-5 border-b border-[#262626]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">{session?.user?.name || "Messages"}</h2>
+            <Button variant="ghost" size="icon" className="hover:bg-[#1a1a1a]">
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
-              placeholder="Search conversations..."
+              placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-[#262626] border-none rounded-lg text-sm placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
         </div>
 
+        {/* Conversations */}
         <ScrollArea className="flex-1">
           {filteredConversations.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              No conversations yet. Search for users to start chatting!
+            <div className="p-6 text-center text-gray-500 text-sm">
+              No conversations yet
             </div>
           ) : (
-            filteredConversations.map((conv) => {
-              const other = getOtherParticipant(conv)
-              const lastMessage = conv.messages[conv.messages.length - 1]
-              
-              return (
-                <button
-                  key={conv.id}
-                  onClick={() => setSelectedConversation(conv.id)}
-                  className={cn(
-                    "w-full p-4 flex items-start gap-3 hover:bg-accent transition-colors border-b",
-                    selectedConversation === conv.id && "bg-accent"
-                  )}
-                >
-                  <div className="relative">
-                    <Avatar>
-                      <AvatarImage src={other?.image || undefined} />
-                      <AvatarFallback>
-                        {other?.name?.[0] || other?.username?.[0] || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    {other?.isOnline && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+            <div className="py-2">
+              {filteredConversations.map((conv) => {
+                const other = getOtherParticipant(conv)
+                const lastMessage = conv.messages[conv.messages.length - 1]
+                const isActive = selectedConversation === conv.id
+                
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelectedConversation(conv.id)}
+                    className={cn(
+                      "w-full px-5 py-2 flex items-center gap-3 hover:bg-[#1a1a1a] transition-colors",
+                      isActive && "bg-[#262626]"
                     )}
-                  </div>
-                  <div className="flex-1 text-left overflow-hidden">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium truncate">
-                        {other?.name || other?.username || "Unknown User"}
-                      </span>
-                      {lastMessage && (
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(lastMessage.createdAt), { addSuffix: true })}
-                        </span>
+                  >
+                    <div className="relative flex-shrink-0">
+                      <Avatar className="h-14 w-14">
+                        <AvatarImage src={other?.image || undefined} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                          {other?.name?.[0] || other?.username?.[0] || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      {other?.isOnline && (
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-[#22c55e] rounded-full border-[3px] border-black" />
                       )}
                     </div>
-                    {lastMessage && (
-                      <p className="text-sm text-muted-foreground truncate">
-                        {lastMessage.sender.id === session?.user?.id ? "You: " : ""}
-                        {lastMessage.content}
-                      </p>
-                    )}
-                  </div>
-                </button>
-              )
-            })
+                    <div className="flex-1 text-left overflow-hidden min-w-0">
+                      <div className="flex items-baseline justify-between gap-2 mb-1">
+                        <span className="font-normal text-sm truncate">
+                          {other?.name || other?.username || "Unknown User"}
+                        </span>
+                        {lastMessage && (
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            {formatMessageTime(new Date(lastMessage.createdAt))}
+                          </span>
+                        )}
+                      </div>
+                      {lastMessage && (
+                        <p className="text-sm text-gray-500 truncate">
+                          {lastMessage.sender.id === session?.user?.id && "You: "}
+                          {lastMessage.content}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           )}
         </ScrollArea>
       </div>
 
-      {/* Chat Area */}
+      {/* Chat Area - Instagram Style */}
       {selectedConversation && otherUser ? (
         <div className="flex-1 flex flex-col">
           {/* Chat Header */}
-          <div className="p-4 border-b flex items-center justify-between">
+          <div className="px-6 py-3 border-b border-[#262626] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <Avatar>
+                <Avatar className="h-10 w-10">
                   <AvatarImage src={otherUser.image || undefined} />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
                     {otherUser.name?.[0] || otherUser.username?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
                 {otherUser.isOnline && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#22c55e] rounded-full border-2 border-black" />
                 )}
               </div>
               <div>
-                <h3 className="font-semibold">
+                <h3 className="font-semibold text-sm">
                   {otherUser.name || otherUser.username || "Unknown User"}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {otherUser.isOnline ? "Online" : "Offline"}
-                </p>
+                {otherUser.isOnline && (
+                  <p className="text-xs text-gray-500">Active now</p>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => startCall("VOICE")}
-                title="Voice Call"
+                className="hover:bg-[#1a1a1a] h-9 w-9"
               >
                 <Phone className="h-5 w-5" />
               </Button>
@@ -348,78 +368,102 @@ export function MessagingInterface() {
                 variant="ghost"
                 size="icon"
                 onClick={() => startCall("VIDEO")}
-                title="Video Call"
+                className="hover:bg-[#1a1a1a] h-9 w-9"
               >
                 <Video className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="hover:bg-[#1a1a1a] h-9 w-9">
+                <Info className="h-5 w-5" />
               </Button>
             </div>
           </div>
 
-          {/* Messages - Instagram Style (no own avatar) */}
-          <ScrollArea className="flex-1 p-4">
+          {/* Messages - Instagram Style */}
+          <ScrollArea className="flex-1 px-6 py-4">
             {loadingMessages && messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <div className="flex flex-col items-center gap-4">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-                  <p className="text-muted-foreground text-sm">Loading messages...</p>
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#0095f6]"></div>
+                  <p className="text-gray-500 text-sm">Loading messages...</p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-              {messages.map((message) => {
-                const isOwn = message.sender.id === session?.user?.id
-                
-                return (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-3",
-                      isOwn ? "flex-row-reverse" : ""
-                    )}
-                  >
-                    {/* Only show avatar for other user (Instagram style) */}
-                    {!isOwn && (
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={message.sender.image || undefined} />
-                        <AvatarFallback>
-                          {message.sender.name?.[0] || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div className={cn("flex flex-col gap-1", isOwn && "items-end")}>
-                      <div
-                        className={cn(
-                          "rounded-2xl px-4 py-2 max-w-md",
-                          isOwn
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        )}
-                      >
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
+              <div className="space-y-1 max-w-3xl mx-auto">
+                {messages.map((message, index) => {
+                  const isOwn = message.sender.id === session?.user?.id
+                  const prevMessage = index > 0 ? messages[index - 1] : null
+                  const showAvatar = !isOwn && (!prevMessage || prevMessage.sender.id !== message.sender.id)
+                  
+                  return (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "flex gap-2 items-end group",
+                        isOwn ? "flex-row-reverse" : ""
+                      )}
+                    >
+                      {/* Avatar for other user only */}
+                      {!isOwn && (
+                        <div className="w-7 h-7 flex-shrink-0">
+                          {showAvatar && (
+                            <Avatar className="h-7 w-7">
+                              <AvatarImage src={message.sender.image || undefined} />
+                              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs">
+                                {message.sender.name?.[0] || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className={cn("flex flex-col", isOwn && "items-end")}>
+                        <div
+                          className={cn(
+                            "rounded-[22px] px-4 py-2 max-w-[400px] break-words",
+                            isOwn
+                              ? "bg-[#0095f6] text-white"
+                              : "bg-[#262626] text-white border border-[#363636]"
+                          )}
+                        >
+                          <p className="text-[14px] leading-[18px]">
+                            {message.content}
+                          </p>
+                        </div>
+                        {/* Show time on hover */}
+                        <span className="text-[11px] text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity px-3">
+                          {format(new Date(message.createdAt), "h:mm a")}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
-                      </span>
+                      
+                      {/* Like button on hover (Instagram feature) */}
+                      <button className={cn(
+                        "opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-red-500 mb-2",
+                        isOwn ? "order-first" : ""
+                      )}>
+                        <Heart className="h-3 w-3" />
+                      </button>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
                 <div ref={messagesEndRef} />
               </div>
             )}
           </ScrollArea>
 
-          {/* Message Input */}
-          <div className="p-4 border-t">
-            <div className="flex items-end gap-2">
+          {/* Message Input - Instagram Style */}
+          <div className="px-6 py-4 border-t border-[#262626]">
+            <div className="flex items-center gap-3 max-w-3xl mx-auto">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-[#1a1a1a] h-9 w-9 flex-shrink-0"
+              >
+                <ImageIcon className="h-5 w-5" />
+              </Button>
+              
               <div className="flex-1 relative">
                 <Input
-                  placeholder="Type a message..."
+                  placeholder="Message..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => {
@@ -429,15 +473,15 @@ export function MessagingInterface() {
                     }
                   }}
                   disabled={sending}
-                  className="pr-10"
+                  className="bg-transparent border border-[#363636] rounded-[22px] px-4 py-2 pr-10 text-sm placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#0095f6]"
                 />
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 hover:bg-transparent h-8 w-8"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 >
-                  <Smile className="h-5 w-5" />
+                  <Smile className="h-5 w-5 text-gray-400" />
                 </Button>
                 {showEmojiPicker && (
                   <div className="absolute bottom-full right-0 mb-2">
@@ -450,17 +494,35 @@ export function MessagingInterface() {
                   </div>
                 )}
               </div>
-              <Button onClick={sendMessage} size="icon" disabled={sending || !newMessage.trim()}>
-                <Send className="h-5 w-5" />
-              </Button>
+              
+              {newMessage.trim() ? (
+                <Button
+                  onClick={sendMessage}
+                  disabled={sending}
+                  className="bg-transparent hover:bg-transparent text-[#0095f6] font-semibold text-sm h-auto p-0"
+                >
+                  Send
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-[#1a1a1a] h-9 w-9 flex-shrink-0"
+                >
+                  <Heart className="h-5 w-5" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-lg mb-2">No conversation selected</p>
-            <p className="text-sm">Choose a conversation from the list to start chatting</p>
+            <div className="w-24 h-24 mx-auto mb-4 rounded-full border-2 border-white flex items-center justify-center">
+              <Send className="h-12 w-12" />
+            </div>
+            <h3 className="text-xl font-light mb-2">Your messages</h3>
+            <p className="text-sm text-gray-500">Send private messages to a friend</p>
           </div>
         </div>
       )}

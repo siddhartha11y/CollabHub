@@ -1,284 +1,170 @@
-/* Instagram-Style Chat UI */
+/* Instagram-Style Custom Messaging UI */
 
-.str-chat {
-  height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
-
-/* Conversation List (Left Sidebar) - Instagram Style */
-.str-chat__channel-list {
-  width: 350px;
-  border-right: 1px solid #262626;
-  background: #000;
-}
-
-.str-chat__channel-list-messenger__main {
-  background: #000;
-}
-
-.str-chat__channel-preview-messenger {
-  padding: 8px 16px;
-  border-bottom: none;
-  background: #000;
-  transition: background 0.2s;
-}
-
-.str-chat__channel-preview-messenger:hover {
-  background: #1a1a1a;
-}
-
-.str-chat__channel-preview-messenger--active {
-  background: #262626;
-}
-
-/* Hide member count (Instagram doesn't show this) */
-.str-chat__channel-preview-messenger__right {
-  display: none !important;
-}
-
-/* Chat Header - Instagram Style */
-.str-chat__header-livestream {
-  border-bottom: 1px solid #262626;
-  padding: 12px 20px;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* Hide member count in header */
-.str-chat__header-livestream-right {
-  display: none !important;
-}
-
-/* Messages Area - Instagram Style */
-.str-chat__list {
-  background: #000;
-  padding: 20px;
-}
-
-.str-chat__message-simple {
-  padding: 2px 0;
-  margin-bottom: 8px;
-}
-
-/* Hide own avatar (Instagram style) */
-.str-chat__message-simple--me .str-chat__avatar {
-  display: none !important;
-}
-
-/* Message bubbles - Instagram style */
-.str-chat__message-simple-text-inner {
-  border-radius: 22px;
-  padding: 8px 16px;
-  max-width: 400px;
-  word-wrap: break-word;
-}
-
-/* Own messages (blue, right side) */
-.str-chat__message-simple--me .str-chat__message-simple-text-inner {
-  background: #0095f6;
-  color: #fff;
-}
-
-/* Other messages (gray, left side) */
-.str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text-inner {
-  background: #262626;
-  color: #fff;
-  border: 1px solid #363636;
-}
-
-/* Message Input - Instagram Style */
-.str-chat__input-flat {
-  border-top: 1px solid #262626;
-  padding: 12px 20px;
-  background: #000;
-}
-
-.str-chat__textarea textarea {
-  background: #000;
-  border: 1px solid #363636;
-  border-radius: 22px;
-  padding: 10px 16px;
-  color: #fff;
-  font-size: 14px;
-  resize: none;
-  min-height: 44px;
-}
-
-.str-chat__textarea textarea::placeholder {
-  color: #8e8e8e;
-}
-
-.str-chat__textarea textarea:focus {
-  border-color: #0095f6;
-  outline: none;
-}
-
-/* Send Button - Instagram Style */
-.str-chat__send-button {
-  background: transparent;
-  color: #0095f6;
-  border: none;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 0 12px;
-}
-
-.str-chat__send-button:hover {
-  opacity: 0.7;
-}
-
-.str-chat__send-button:disabled {
-  opacity: 0.3;
-}
-
-/* Emoji Picker Button */
-.str-chat__input-flat-emojiselect {
-  color: #fff;
-}
-
-/* File Upload Button */
-.str-chat__input-flat-fileupload {
-  color: #fff;
-}
-
-/* Typing Indicator - Instagram Style */
-.str-chat__typing-indicator {
-  padding: 8px 20px;
-  color: #8e8e8e;
-  font-size: 13px;
-}
-
-/* Online Status - Green Dot */
-.str-chat__avatar--online::after {
-  background-color: #22c55e;
-  border: 2px solid #000;
-}
-
-/* Scrollbar - Instagram Style */
-.str-chat__list::-webkit-scrollbar {
+/* Custom scrollbar for Instagram look */
+.instagram-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
-.str-chat__list::-webkit-scrollbar-track {
+.instagram-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.str-chat__list::-webkit-scrollbar-thumb {
+.instagram-scrollbar::-webkit-scrollbar-thumb {
   background: #363636;
   border-radius: 3px;
 }
 
-.str-chat__list::-webkit-scrollbar-thumb:hover {
+.instagram-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #4a4a4a;
 }
 
-/* Channel List Scrollbar */
-.str-chat__channel-list-messenger__main::-webkit-scrollbar {
-  width: 6px;
+/* Smooth message animations */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.str-chat__channel-list-messenger__main::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.str-chat__channel-list-messenger__main::-webkit-scrollbar-thumb {
-  background: #363636;
-  border-radius: 3px;
+.message-animate-left {
+  animation: slideInFromLeft 0.2s ease-out;
 }
 
-/* Hide unnecessary elements */
-.str-chat__message-simple-status {
-  display: none;
+.message-animate-right {
+  animation: slideInFromRight 0.2s ease-out;
 }
 
-.str-chat__message-simple-name {
-  display: none;
+/* Instagram blue color for links and buttons */
+.instagram-blue {
+  color: #0095f6;
 }
 
-/* Reactions - Instagram Style */
-.str-chat__reaction-list {
+.instagram-blue-bg {
+  background-color: #0095f6;
+}
+
+/* Gradient avatar fallback (Instagram style) */
+.instagram-gradient {
+  background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%);
+}
+
+/* Message bubble hover effect */
+.message-bubble {
+  transition: all 0.2s ease;
+}
+
+.message-bubble:hover {
+  transform: scale(1.02);
+}
+
+/* Online indicator pulse animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.online-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Typing indicator animation */
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+.typing-dot {
+  animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Emoji picker custom styles */
+.emoji-picker {
   background: #262626;
   border: 1px solid #363636;
-  border-radius: 20px;
-}
-
-.str-chat__message-reactions-list-item {
-  background: #363636;
   border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-/* Date Separator - Instagram Style */
-.str-chat__date-separator {
-  color: #8e8e8e;
-  font-size: 12px;
-  text-transform: uppercase;
-  margin: 16px 0;
+/* Message input focus glow */
+.message-input:focus {
+  box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.2);
 }
 
-/* Loading Indicator */
-.str-chat__loading-indicator {
-  background: #000;
-  color: #fff;
+/* Conversation item active state */
+.conversation-active {
+  position: relative;
 }
 
-/* Empty State */
-.str-chat__empty-channel {
-  background: #000;
-  color: #8e8e8e;
+.conversation-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #0095f6;
 }
 
-/* Thread (if enabled) */
-.str-chat__thread {
-  background: #000;
-  border-left: 1px solid #262626;
-}
-
-/* Message Actions */
-.str-chat__message-actions-box {
-  background: #262626;
-  border: 1px solid #363636;
-  border-radius: 12px;
-}
-
-.str-chat__message-actions-box button {
-  color: #fff;
-}
-
-.str-chat__message-actions-box button:hover {
-  background: #363636;
-}
-
-/* Attachment Preview */
-.str-chat__attachment-preview-list {
-  background: #000;
-}
-
-/* Image Attachments - Instagram Style */
-.str-chat__message-attachment--image {
+/* Image preview in messages */
+.message-image {
   border-radius: 12px;
   overflow: hidden;
   max-width: 300px;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
-/* Video Attachments */
-.str-chat__message-attachment--video {
-  border-radius: 12px;
-  overflow: hidden;
-  max-width: 300px;
+.message-image:hover {
+  transform: scale(1.05);
 }
 
-/* File Attachments */
-.str-chat__message-attachment--file {
-  background: #262626;
-  border: 1px solid #363636;
-  border-radius: 12px;
-  padding: 12px;
+/* Reaction button hover */
+.reaction-button {
+  transition: all 0.2s;
 }
 
-/* Giphy - Instagram Style */
-.str-chat__message-attachment--giphy {
-  border-radius: 12px;
-  overflow: hidden;
+.reaction-button:hover {
+  transform: scale(1.2);
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
 }
