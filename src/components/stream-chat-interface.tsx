@@ -195,19 +195,34 @@ export function StreamChatInterface() {
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Settings className="w-8 h-8 text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Setup Required</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Chat Setup Required</h2>
             <p className="text-gray-300 mb-6">{error}</p>
-            <div className="bg-black/50 rounded-xl p-4 text-left text-sm">
-              <p className="font-semibold mb-3 text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Quick Setup:
-              </p>
-              <ol className="list-decimal list-inside space-y-2 text-gray-300">
-                <li>Visit getstream.io/chat/trial</li>
-                <li>Create free account</li>
-                <li>Get API credentials</li>
-                <li>Add to .env.local</li>
-              </ol>
+            
+            <div className="space-y-4">
+              <Button
+                onClick={() => router.push('/dashboard')}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              
+              <div className="bg-black/50 rounded-xl p-4 text-left text-sm">
+                <p className="font-semibold mb-3 text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Quick Setup:
+                </p>
+                <ol className="list-decimal list-inside space-y-2 text-gray-300">
+                  <li>Visit getstream.io/chat/trial</li>
+                  <li>Create free account</li>
+                  <li>Get API credentials</li>
+                  <li>Add to .env.local:</li>
+                </ol>
+                <pre className="mt-2 bg-gray-900 p-2 rounded text-xs text-green-400">
+NEXT_PUBLIC_STREAM_API_KEY=your_key{'\n'}
+STREAM_API_SECRET=your_secret
+                </pre>
+              </div>
             </div>
           </div>
         </div>
