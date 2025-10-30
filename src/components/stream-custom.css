@@ -1,404 +1,265 @@
-/* Instagram-Style Stream Chat UI Override */
+/* Modern Stream Chat UI with Tailwind Integration */
 
-/* Main Chat Container */
+/* Base Chat Container */
 .str-chat {
-  height: 100vh !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  background: #000 !important;
-  color: #fff !important;
+  @apply h-full font-sans;
 }
 
-/* Channel List (Left Sidebar) - Instagram Style */
+/* Hide default headers since we're using custom ones */
+.str-chat__channel-list-header,
+.str-chat__header-livestream {
+  @apply hidden;
+}
+
+/* Channel List Styling */
 .str-chat__channel-list {
-  width: 350px !important;
-  background: #000 !important;
-  border-right: 1px solid #262626 !important;
-}
-
-.str-chat__channel-list-messenger {
-  background: #000 !important;
+  @apply bg-transparent border-none;
 }
 
 .str-chat__channel-list-messenger__main {
-  background: #000 !important;
-  padding: 0 !important;
-}
-
-/* Channel List Header */
-.str-chat__channel-list-messenger__main .str-chat__channel-list-header {
-  background: #000 !important;
-  border-bottom: 1px solid #262626 !important;
-  padding: 20px !important;
-}
-
-.str-chat__channel-list-header__title {
-  color: #fff !important;
-  font-size: 24px !important;
-  font-weight: 600 !important;
+  @apply bg-transparent p-0;
 }
 
 /* Channel Preview Items */
 .str-chat__channel-preview-messenger {
-  padding: 8px 20px !important;
-  background: #000 !important;
-  border-bottom: none !important;
-  transition: background 0.2s !important;
-  cursor: pointer !important;
+  @apply px-4 py-3 bg-transparent border-none transition-all duration-200 cursor-pointer rounded-xl mx-2 mb-1;
 }
 
 .str-chat__channel-preview-messenger:hover {
-  background: #1a1a1a !important;
+  @apply bg-white/5 backdrop-blur-sm;
 }
 
 .str-chat__channel-preview-messenger--active {
-  background: #262626 !important;
+  @apply bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30;
 }
 
 /* Channel Avatar */
 .str-chat__channel-preview-messenger .str-chat__avatar {
-  width: 56px !important;
-  height: 56px !important;
-  margin-right: 12px !important;
+  @apply w-12 h-12 mr-3;
 }
 
 .str-chat__avatar-image {
-  border-radius: 50% !important;
+  @apply rounded-full ring-2 ring-white/10;
 }
 
 .str-chat__avatar-fallback {
-  background: linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%) !important;
-  color: #fff !important;
-  font-weight: 600 !important;
+  @apply bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold rounded-full;
 }
 
 /* Online Status */
 .str-chat__avatar--online::after {
-  background-color: #22c55e !important;
-  border: 3px solid #000 !important;
-  width: 16px !important;
-  height: 16px !important;
+  @apply bg-green-400 border-2 border-black w-4 h-4;
 }
 
 /* Channel Info */
 .str-chat__channel-preview-messenger__name {
-  color: #fff !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  margin-bottom: 2px !important;
+  @apply text-white font-medium text-sm mb-1;
 }
 
 .str-chat__channel-preview-messenger__last-message {
-  color: #8e8e8e !important;
-  font-size: 14px !important;
+  @apply text-gray-400 text-sm;
 }
 
 .str-chat__channel-preview-messenger__last-message-at {
-  color: #8e8e8e !important;
-  font-size: 12px !important;
+  @apply text-gray-500 text-xs;
 }
 
-/* Hide member count and other extras */
+/* Hide member count */
 .str-chat__channel-preview-messenger__right {
-  display: none !important;
+  @apply hidden;
 }
 
-/* Chat Header - Instagram Style */
-.str-chat__header-livestream {
-  background: #000 !important;
-  border-bottom: 1px solid #262626 !important;
-  padding: 12px 24px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-}
-
-.str-chat__header-livestream-left {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-}
-
-.str-chat__header-livestream .str-chat__avatar {
-  width: 40px !important;
-  height: 40px !important;
-}
-
-.str-chat__header-livestream-title {
-  color: #fff !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-}
-
-.str-chat__header-livestream-subtitle {
-  color: #8e8e8e !important;
-  font-size: 12px !important;
-}
-
-/* Hide member count in header */
-.str-chat__header-livestream-right {
-  display: none !important;
-}
-
-/* Messages Area - Instagram Style */
+/* Messages Area */
 .str-chat__list {
-  background: #000 !important;
-  padding: 16px 24px !important;
+  @apply bg-transparent px-6 py-4;
 }
 
 .str-chat__message-simple {
-  margin-bottom: 4px !important;
-  padding: 0 !important;
+  @apply mb-2 p-0;
 }
 
 /* Hide own avatar (Instagram style) */
 .str-chat__message-simple--me .str-chat__avatar {
-  display: none !important;
+  @apply hidden;
 }
 
 .str-chat__message-simple--me {
-  flex-direction: row-reverse !important;
+  @apply flex-row-reverse;
 }
 
-/* Message Content */
+/* Message Bubbles */
 .str-chat__message-simple-text {
-  max-width: 400px !important;
+  @apply max-w-sm;
 }
 
 .str-chat__message-simple-text-inner {
-  border-radius: 22px !important;
-  padding: 8px 16px !important;
-  font-size: 14px !important;
-  line-height: 18px !important;
-  word-wrap: break-word !important;
+  @apply rounded-3xl px-4 py-2 text-sm leading-5 break-words shadow-lg;
 }
 
-/* Own messages (blue, right side) */
+/* Own messages (gradient blue) */
 .str-chat__message-simple--me .str-chat__message-simple-text-inner {
-  background: #0095f6 !important;
-  color: #fff !important;
-  border: none !important;
+  @apply bg-gradient-to-r from-blue-500 to-blue-600 text-white border-none;
 }
 
-/* Other messages (gray, left side) */
+/* Other messages (dark with glow) */
 .str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text-inner {
-  background: #262626 !important;
-  color: #fff !important;
-  border: 1px solid #363636 !important;
+  @apply bg-gray-800/80 backdrop-blur-sm text-white border border-gray-700/50;
 }
 
-/* Message Input - Instagram Style */
+/* Message Input Area */
 .str-chat__input-flat {
-  background: #000 !important;
-  border-top: 1px solid #262626 !important;
-  padding: 16px 24px !important;
+  @apply bg-transparent border-none p-0;
 }
 
 .str-chat__input-flat-wrapper {
-  background: transparent !important;
-  border: 1px solid #363636 !important;
-  border-radius: 22px !important;
-  padding: 0 !important;
+  @apply bg-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-3xl;
 }
 
 .str-chat__textarea textarea {
-  background: transparent !important;
-  border: none !important;
-  color: #fff !important;
-  font-size: 14px !important;
-  padding: 10px 16px !important;
-  resize: none !important;
-  min-height: 44px !important;
-}
-
-.str-chat__textarea textarea::placeholder {
-  color: #8e8e8e !important;
+  @apply bg-transparent border-none text-white text-sm px-4 py-3 resize-none min-h-[44px] placeholder:text-gray-400;
 }
 
 .str-chat__textarea textarea:focus {
-  outline: none !important;
-  border-color: #0095f6 !important;
+  @apply outline-none ring-2 ring-blue-500/50;
 }
 
-/* Send Button - Instagram Style */
+/* Send Button */
 .str-chat__send-button {
-  background: transparent !important;
-  color: #0095f6 !important;
-  border: none !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  padding: 0 16px !important;
-}
-
-.str-chat__send-button:hover {
-  opacity: 0.7 !important;
+  @apply bg-transparent text-blue-400 border-none font-semibold text-sm px-4 hover:text-blue-300 transition-colors;
 }
 
 .str-chat__send-button:disabled {
-  opacity: 0.3 !important;
+  @apply opacity-30;
 }
 
-/* Emoji and File Upload Buttons */
+/* Input Buttons */
 .str-chat__input-flat-emojiselect,
 .str-chat__input-flat-fileupload {
-  color: #8e8e8e !important;
-  background: transparent !important;
-  border: none !important;
-  padding: 8px !important;
-}
-
-.str-chat__input-flat-emojiselect:hover,
-.str-chat__input-flat-fileupload:hover {
-  color: #fff !important;
+  @apply text-gray-400 bg-transparent border-none p-2 hover:text-white transition-colors;
 }
 
 /* Typing Indicator */
 .str-chat__typing-indicator {
-  background: #000 !important;
-  color: #8e8e8e !important;
-  font-size: 13px !important;
-  padding: 8px 24px !important;
+  @apply bg-transparent text-gray-400 text-xs px-6 py-2;
 }
 
-/* Scrollbars - Instagram Style */
+/* Scrollbars */
 .str-chat__list::-webkit-scrollbar,
 .str-chat__channel-list-messenger__main::-webkit-scrollbar {
-  width: 6px !important;
+  @apply w-1.5;
 }
 
 .str-chat__list::-webkit-scrollbar-track,
 .str-chat__channel-list-messenger__main::-webkit-scrollbar-track {
-  background: transparent !important;
+  @apply bg-transparent;
 }
 
 .str-chat__list::-webkit-scrollbar-thumb,
 .str-chat__channel-list-messenger__main::-webkit-scrollbar-thumb {
-  background: #363636 !important;
-  border-radius: 3px !important;
+  @apply bg-gray-600/50 rounded-full;
 }
 
 .str-chat__list::-webkit-scrollbar-thumb:hover,
 .str-chat__channel-list-messenger__main::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a !important;
+  @apply bg-gray-500/70;
 }
 
 /* Hide unnecessary elements */
 .str-chat__message-simple-status,
 .str-chat__message-simple-name,
 .str-chat__message-simple-timestamp {
-  display: none !important;
+  @apply hidden;
 }
 
-/* Reactions - Instagram Style */
+/* Reactions */
 .str-chat__reaction-list {
-  background: #262626 !important;
-  border: 1px solid #363636 !important;
-  border-radius: 20px !important;
+  @apply bg-gray-800/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl;
 }
 
 .str-chat__message-reactions-list-item {
-  background: #363636 !important;
-  border-radius: 12px !important;
-  color: #fff !important;
+  @apply bg-gray-700/50 rounded-xl text-white;
 }
 
 /* Date Separator */
 .str-chat__date-separator {
-  color: #8e8e8e !important;
-  font-size: 12px !important;
-  text-transform: uppercase !important;
-  margin: 16px 0 !important;
+  @apply text-gray-500 text-xs uppercase my-4 text-center;
 }
 
 /* Loading States */
-.str-chat__loading-indicator {
-  background: #000 !important;
-  color: #fff !important;
-}
-
+.str-chat__loading-indicator,
 .str-chat__loading-channels {
-  background: #000 !important;
-  color: #8e8e8e !important;
+  @apply bg-transparent text-gray-400;
 }
 
 /* Empty States */
 .str-chat__empty-channel {
-  background: #000 !important;
-  color: #8e8e8e !important;
+  @apply bg-transparent text-gray-400 text-center py-12;
 }
 
-/* Thread (if enabled) */
+/* Thread */
 .str-chat__thread {
-  background: #000 !important;
-  border-left: 1px solid #262626 !important;
+  @apply bg-gray-900/50 backdrop-blur-xl border-l border-gray-800/50;
 }
 
 /* Message Actions */
 .str-chat__message-actions-box {
-  background: #262626 !important;
-  border: 1px solid #363636 !important;
-  border-radius: 12px !important;
+  @apply bg-gray-800/90 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-xl;
 }
 
 .str-chat__message-actions-box button {
-  color: #fff !important;
+  @apply text-white hover:bg-gray-700/50 transition-colors;
 }
 
-.str-chat__message-actions-box button:hover {
-  background: #363636 !important;
-}
-
-/* Image/Video Attachments - Instagram Style */
+/* Attachments */
 .str-chat__message-attachment--image,
 .str-chat__message-attachment--video {
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  max-width: 300px !important;
+  @apply rounded-xl overflow-hidden max-w-xs shadow-lg;
 }
 
-/* File Attachments */
 .str-chat__message-attachment--file {
-  background: #262626 !important;
-  border: 1px solid #363636 !important;
-  border-radius: 12px !important;
-  padding: 12px !important;
-  color: #fff !important;
+  @apply bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl p-3 text-white;
 }
 
-/* Giphy */
 .str-chat__message-attachment--giphy {
-  border-radius: 12px !important;
-  overflow: hidden !important;
+  @apply rounded-xl overflow-hidden shadow-lg;
 }
 
-/* Search */
-.str-chat__channel-search {
-  background: #000 !important;
-  border-bottom: 1px solid #262626 !important;
-  padding: 16px 20px !important;
+/* Custom Animations */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.str-chat__channel-search-input {
-  background: #262626 !important;
-  border: none !important;
-  border-radius: 8px !important;
-  color: #fff !important;
-  padding: 8px 12px !important;
+.str-chat__message-simple {
+  animation: messageSlideIn 0.3s ease-out;
 }
 
-.str-chat__channel-search-input::placeholder {
-  color: #8e8e8e !important;
-}
-
-/* Mobile Responsiveness */
+/* Responsive Design */
 @media (max-width: 768px) {
   .str-chat__channel-list {
-    width: 100% !important;
-    position: absolute !important;
-    z-index: 10 !important;
+    @apply w-full absolute z-10;
   }
   
   .str-chat__channel {
-    width: 100% !important;
+    @apply w-full;
   }
+}
+
+/* Custom Gradient Backgrounds */
+.gradient-bg-1 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-bg-2 {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-bg-3 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
