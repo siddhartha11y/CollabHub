@@ -89,16 +89,23 @@ export default function UserProfilePage() {
             <Button 
               onClick={async () => {
                 try {
-                  const res = await fetch("/api/conversations", {
+                  // Create Stream channel
+                  const res = await fetch("/api/stream/create-channel", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ participantId: user.id }),
+                    body: JSON.stringify({ 
+                      currentUserEmail: session?.user?.email,
+                      targetUserId: user.id 
+                    }),
                   })
                   if (res.ok) {
                     router.push("/messages")
+                  } else {
+                    alert("Failed to create conversation")
                   }
                 } catch (error) {
                   console.error("Failed to create conversation:", error)
+                  alert("Failed to create conversation")
                 }
               }}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
