@@ -16,9 +16,5 @@ export default async function MessagesPage() {
     redirect("/auth/signin")
   }
 
-  return (
-    <div className="h-screen">
-      <StreamChatInterface />
-    </div>
-  )
+  return <StreamChatInterface />
 }
