@@ -39,10 +39,22 @@ export async function POST(request: NextRequest) {
 
     const serverClient = StreamChat.getInstance(apiKey, apiSecret)
 
+    // IMPORTANT: Register both users in Stream first (upsert = create or update)
+    await serverClient.upsertUsers([
+      {
+        id: currentUser.id,
+        name: (currentUser.name || currentUser.email.split('@')[0]).substring(0, 20),
+      },
+      {
+        id: targetUser.id,
+        name: (targetUser.name || targetUser.email.split('@')[0]).substring(0, 20),
+      },
+    ])
+
     // Create channel ID from sorted user IDs (ensures same channel for both users)
     const channelId = [currentUser.id, targetUser.id].sort().join('_')
 
-    // Create or get channel
+    // Create or get channel (this is your one-to-one conversation, like Instagram DM)
     const channel = serverClient.channel('messaging', channelId, {
       members: [currentUser.id, targetUser.id],
       created_by_id: currentUser.id,
