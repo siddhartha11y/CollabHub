@@ -13,7 +13,6 @@ import {
   MessageList,
   Thread,
   Window,
-  LoadingIndicator,
 } from "stream-chat-react"
 import { StreamVideo, StreamVideoClient, Call } from "@stream-io/video-react-sdk"
 import { Button } from "@/components/ui/button"
@@ -26,7 +25,6 @@ import {
   Phone, 
   Video, 
   Info, 
-  MoreVertical,
   UserPlus,
   Settings,
   Bell,
@@ -37,7 +35,6 @@ import {
   Mic,
   PhoneCall
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import "stream-chat-react/dist/css/v2/index.css"
 import "./stream-custom.css"
 
@@ -79,24 +76,24 @@ export function StreamChatInterface() {
 
         const { token, userId, apiKey, userName } = await response.json()
 
-        // Initialize Chat Client
+        // Initialize Chat Client with MINIMAL data to avoid 5KB limit
         const chatClient = StreamChat.getInstance(apiKey)
         await chatClient.connectUser(
           {
             id: userId,
             name: userName,
-            image: session.user.image || undefined,
+            // Remove image to avoid 5KB limit - we'll handle avatars in UI
           },
           token
         )
 
-        // Initialize Video Client
+        // Initialize Video Client with MINIMAL data
         const videoClientInstance = new StreamVideoClient({
           apiKey,
           user: {
             id: userId,
             name: userName,
-            image: session.user.image || undefined,
+            // Remove image to avoid 5KB limit
           },
           token,
         })
@@ -156,16 +153,18 @@ export function StreamChatInterface() {
     }
   }, [client])
 
-  const startCall = useCallback(async (type: 'audio' | 'video') => {
+  const startCall = useCallback(async (callType: 'audio' | 'video') => {
     if (!videoClient || !selectedChannel) return
 
     try {
       const callId = `${selectedChannel.id}-${Date.now()}`
       const call = videoClient.call('default', callId)
       
+      const memberIds = selectedChannel.state.members ? Object.keys(selectedChannel.state.members) : []
+      
       await call.getOrCreate({
         data: {
-          members: selectedChannel.state.members ? Object.keys(selectedChannel.state.members) : [],
+          members: memberIds.map(id => ({ user_id: id })),
         },
       })
 
@@ -364,7 +363,6 @@ STREAM_API_SECRET=your_secret
                   filters={filters} 
                   sort={sort}
                   options={options}
-                  onSelect={(channel) => setSelectedChannel(channel)}
                 />
               </div>
 
