@@ -25,9 +25,31 @@
   gap: 12px !important;
 }
 
+/* Ensure avatar is visible in header */
 .str-chat__header-livestream .str-chat__avatar {
   width: 40px !important;
   height: 40px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.str-chat__header-livestream .str-chat__avatar-image {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  display: block !important;
+}
+
+.str-chat__header-livestream .str-chat__avatar-fallback {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .str-chat__header-livestream-title {
@@ -37,8 +59,18 @@
   margin: 0 !important;
 }
 
-/* Hide member count in header subtitle */
-.str-chat__header-livestream-subtitle {
+/* Hide ALL member count and status info */
+.str-chat__header-livestream-subtitle,
+.str-chat__header-livestream-right,
+.str-chat__header-livestream .str-chat__header-livestream-subtitle {
+  display: none !important;
+}
+
+/* Hide any text that contains "members" or "online" */
+.str-chat__header-livestream *[class*="member"],
+.str-chat__header-livestream *[class*="online"],
+.str-chat__header-livestream *:contains("member"),
+.str-chat__header-livestream *:contains("online") {
   display: none !important;
 }
 
@@ -146,9 +178,12 @@
   flex-direction: row-reverse !important;
 }
 
-/* Message Bubbles */
+/* Message Bubbles - Fix double box issue */
 .str-chat__message-simple-text {
   max-width: 384px !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .str-chat__message-simple-text-inner {
@@ -157,20 +192,41 @@
   font-size: 14px !important;
   line-height: 1.25 !important;
   word-wrap: break-word !important;
+  position: relative !important;
 }
 
-/* Own messages (blue) */
+/* Remove any wrapper backgrounds that cause double boxes */
+.str-chat__message-simple-text-inner::before,
+.str-chat__message-simple-text::before {
+  display: none !important;
+}
+
+/* Own messages (blue) - single box only */
 .str-chat__message-simple--me .str-chat__message-simple-text-inner {
   background: #3b82f6 !important;
   color: white !important;
   border: none !important;
+  box-shadow: none !important;
 }
 
-/* Other messages (dark) */
+.str-chat__message-simple--me .str-chat__message-simple-text {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Other messages (dark) - single box only */
 .str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text-inner {
   background: rgba(31, 41, 55, 0.8) !important;
   color: white !important;
   border: 1px solid rgba(55, 65, 81, 0.5) !important;
+  box-shadow: none !important;
+}
+
+.str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Message Input Area - Make sure it's visible */
@@ -252,8 +308,25 @@
   display: none !important;
 }
 
-/* Hide member count in header subtitle */
-.str-chat__header-livestream-subtitle {
+/* Hide ALL member count related elements */
+.str-chat__header-livestream-subtitle,
+.str-chat__header-livestream-right,
+.str-chat__header-info,
+.str-chat__header-livestream .str-chat__header-livestream-subtitle,
+.str-chat__header-livestream .str-chat__header-livestream-right {
+  display: none !important;
+}
+
+/* Hide any element containing member count text */
+.str-chat__header-livestream span:contains("member"),
+.str-chat__header-livestream span:contains("online"),
+.str-chat__header-livestream div:contains("member"),
+.str-chat__header-livestream div:contains("online") {
+  display: none !important;
+}
+
+/* Force hide subtitle area completely */
+.str-chat__header-livestream > div > div:last-child {
   display: none !important;
 }
 
