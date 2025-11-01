@@ -12,6 +12,8 @@ import {
   MessageList,
   Thread,
   Window,
+  useChannelStateContext,
+  useChatContext,
 } from "stream-chat-react"
 import { StreamVideo, StreamVideoClient, Call } from "@stream-io/video-react-sdk"
 import { Button } from "@/components/ui/button"
@@ -37,44 +39,55 @@ import {
 import "stream-chat-react/dist/css/v2/index.css"
 import "./stream-custom.css"
 
-// Custom Chat Header Component
-function CustomChatHeader({ client, onAudioCall, onVideoCall }: {
-  client: StreamChat | null
+// Custom Chat Header Component using Stream Context
+function CustomChatHeader({ onAudioCall, onVideoCall }: {
   onAudioCall: () => void
   onVideoCall: () => void
 }) {
+  const { client } = useChatContext()
+  const { channel } = useChannelStateContext()
   const [otherUser, setOtherUser] = useState<any>(null)
 
   useEffect(() => {
-    if (!client) return
+    if (!channel || !client) return
 
     const updateOtherUser = () => {
-      const activeChannel = client.activeChannel
-      if (activeChannel && activeChannel.state.members) {
-        const members = Object.values(activeChannel.state.members)
-        const other = members.find((member: any) => member.user?.id !== client.userID)
-        if (other?.user) {
-          setOtherUser({
-            name: other.user.name || other.user.id,
-            image: other.user.image,
-            online: other.user.online
+      const members = Object.values(channel.state.members || {})
+      const otherMember = members.find((member: any) => member.user_id !== client.userID)
+      
+      if (otherMember) {
+        // Get user info from database since Stream doesn't have images
+        fetch(`/api/users/${otherMember.user_id}`)
+          .then(res => res.json())
+          .then(userData => {
+            setOtherUser({
+              name: userData.name || otherMember.user_id,
+              image: userData.image,
+              online: true // Assume online for now
+            })
           })
-        }
+          .catch(() => {
+            // Fallback to basic info
+            setOtherUser({
+              name: otherMember.user_id,
+              image: null,
+              online: true
+            })
+          })
       }
     }
 
-    // Listen for channel changes
-    client.on('channel.updated', updateOtherUser)
-    client.on('user.presence.changed', updateOtherUser)
-    
-    // Initial update
     updateOtherUser()
 
+    // Listen for member updates
+    channel.on('member.added', updateOtherUser)
+    channel.on('member.updated', updateOtherUser)
+
     return () => {
-      client.off('channel.updated', updateOtherUser)
-      client.off('user.presence.changed', updateOtherUser)
+      channel.off('member.added', updateOtherUser)
+      channel.off('member.updated', updateOtherUser)
     }
-  }, [client])
+  }, [channel, client])
 
   return (
     <div className="bg-black/50 backdrop-blur-xl border-b border-gray-800/50 p-4 flex items-center justify-between">
@@ -96,10 +109,10 @@ function CustomChatHeader({ client, onAudioCall, onVideoCall }: {
           </>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-600 rounded-full"></div>
+            <div className="w-10 h-10 bg-gray-600 rounded-full animate-pulse"></div>
             <div>
-              <h3 className="text-white font-semibold">Chat</h3>
-              <p className="text-gray-400 text-sm">Loading...</p>
+              <h3 className="text-white font-semibold">Loading...</h3>
+              <p className="text-gray-400 text-sm">Getting user info</p>
             </div>
           </div>
         )}
@@ -382,7 +395,6 @@ STREAM_API_SECRET=your_secret
               
               <div className="flex items-center gap-3 mb-4">
                 <Avatar className="w-12 h-12 ring-2 ring-blue-500/50">
-                  <AvatarImage src={session?.user?.image || undefined} />
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
                     {session?.user?.name?.[0] || "U"}
                   </AvatarFallback>
@@ -477,7 +489,6 @@ STREAM_API_SECRET=your_secret
               <Window>
                 {/* COMPLETELY CUSTOM HEADER - No Stream components */}
                 <CustomChatHeader 
-                  client={client}
                   onAudioCall={() => startCall('audio')}
                   onVideoCall={() => startCall('video')}
                 />

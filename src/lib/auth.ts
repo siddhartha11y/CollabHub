@@ -160,7 +160,7 @@ export const authOptions: NextAuthOptions = {
           session.user.id = token.id as string
           session.user.name = token.name as string | null
           session.user.email = token.email as string | null
-          session.user.image = token.picture as string | null
+          // Don't include image in session - fetch it separately when needed
         }
         return session
       } catch (error) {
@@ -168,9 +168,9 @@ export const authOptions: NextAuthOptions = {
         return session
       }
     },
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, trigger }) {
       try {
-        // Initial sign in - get minimal data from database
+        // Initial sign in - get MINIMAL data only
         if (user) {
           const dbUser = await prisma.user.findUnique({
             where: { email: user.email! },
@@ -178,7 +178,6 @@ export const authOptions: NextAuthOptions = {
               id: true,
               name: true,
               email: true,
-              image: true,
             },
           })
 
@@ -187,12 +186,12 @@ export const authOptions: NextAuthOptions = {
               id: dbUser.id,
               name: dbUser.name,
               email: dbUser.email,
-              picture: dbUser.image,
+              // Remove image from JWT to reduce size
             }
           }
         }
 
-        // Only refresh on update trigger (profile changes)
+        // Only refresh on update trigger
         if (trigger === "update" && token.email) {
           const dbUser = await prisma.user.findFirst({
             where: {
@@ -202,7 +201,6 @@ export const authOptions: NextAuthOptions = {
               id: true,
               name: true,
               email: true,
-              image: true,
             },
           })
 
@@ -211,7 +209,6 @@ export const authOptions: NextAuthOptions = {
               id: dbUser.id,
               name: dbUser.name,
               email: dbUser.email,
-              picture: dbUser.image,
             }
           }
         }
