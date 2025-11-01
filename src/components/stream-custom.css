@@ -1,74 +1,36 @@
-/* Stream Chat Instagram Style Overrides */
+/* Complete Stream Chat Instagram Style Override */
 
 .str-chat {
   height: 100% !important;
-  font-family: system-ui, -apple-system, sans-serif !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   overflow: hidden !important;
 }
 
-/* Hide channel list header but show chat header */
-.str-chat__channel-list-header {
-  display: none !important;
-}
-
-/* Show and style the chat header */
-.str-chat__header-livestream {
-  display: flex !important;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-}
-
-.str-chat__header-livestream-left {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-}
-
-/* Ensure avatar is visible in header */
-.str-chat__header-livestream .str-chat__avatar {
-  width: 40px !important;
-  height: 40px !important;
-  display: block !important;
-  visibility: visible !important;
-}
-
-.str-chat__header-livestream .str-chat__avatar-image {
-  width: 40px !important;
-  height: 40px !important;
-  border-radius: 50% !important;
-  display: block !important;
-}
-
-.str-chat__header-livestream .str-chat__avatar-fallback {
-  width: 40px !important;
-  height: 40px !important;
-  border-radius: 50% !important;
-  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%) !important;
-  color: white !important;
-  font-weight: 600 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.str-chat__header-livestream-title {
-  color: white !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-}
-
-/* Hide ALL member count and status info */
-.str-chat__header-livestream-subtitle,
+/* COMPLETELY HIDE DEFAULT HEADERS - We'll use custom ones */
+.str-chat__channel-list-header,
+.str-chat__header-livestream,
+.str-chat__header-livestream-left,
 .str-chat__header-livestream-right,
-.str-chat__header-livestream .str-chat__header-livestream-subtitle {
+.str-chat__header-livestream-title,
+.str-chat__header-livestream-subtitle {
   display: none !important;
+  visibility: hidden !important;
 }
 
-/* Hide any text that contains "members" or "online" */
-.str-chat__header-livestream *[class*="member"],
-.str-chat__header-livestream *[class*="online"] {
+/* Hide ALL member count related elements */
+*[class*="member"],
+*[class*="online"],
+*[class*="subtitle"],
+*[class*="count"],
+.str-chat__header-livestream *,
+.str-chat__channel-header * {
+  font-size: 0 !important;
+}
+
+/* Reset any member count text */
+.str-chat__header-livestream::after,
+.str-chat__header-livestream::before {
+  content: "" !important;
   display: none !important;
 }
 
@@ -176,55 +138,52 @@
   flex-direction: row-reverse !important;
 }
 
-/* Message Bubbles - Fix double box issue */
-.str-chat__message-simple-text {
-  max-width: 384px !important;
-  background: none !important;
+/* COMPLETELY RESET MESSAGE BUBBLES - Remove all default styling */
+.str-chat__message-simple-text,
+.str-chat__message-simple-text-inner,
+.str-chat__message-simple-text::before,
+.str-chat__message-simple-text::after,
+.str-chat__message-simple-text-inner::before,
+.str-chat__message-simple-text-inner::after {
+  background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  outline: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-.str-chat__message-simple-text-inner {
-  border-radius: 24px !important;
-  padding: 8px 16px !important;
-  font-size: 14px !important;
-  line-height: 1.25 !important;
-  word-wrap: break-word !important;
+/* Message container */
+.str-chat__message-simple-text {
+  max-width: 400px !important;
+  display: block !important;
   position: relative !important;
 }
 
-/* Remove any wrapper backgrounds that cause double boxes */
-.str-chat__message-simple-text-inner::before,
-.str-chat__message-simple-text::before {
-  display: none !important;
+/* SINGLE message bubble - this is the ONLY styled element */
+.str-chat__message-simple-text-inner {
+  border-radius: 22px !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  line-height: 18px !important;
+  word-wrap: break-word !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-/* Own messages (blue) - single box only */
+/* Own messages - Instagram blue */
 .str-chat__message-simple--me .str-chat__message-simple-text-inner {
-  background: #3b82f6 !important;
+  background: #0095f6 !important;
   color: white !important;
-  border: none !important;
-  box-shadow: none !important;
 }
 
-.str-chat__message-simple--me .str-chat__message-simple-text {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Other messages (dark) - single box only */
+/* Other messages - Dark gray */
 .str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text-inner {
-  background: rgba(31, 41, 55, 0.8) !important;
+  background: #262626 !important;
   color: white !important;
-  border: 1px solid rgba(55, 65, 81, 0.5) !important;
-  box-shadow: none !important;
-}
-
-.str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-simple-text {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  border: 1px solid #363636 !important;
 }
 
 /* Message Input Area - Make sure it's visible */
@@ -306,25 +265,234 @@
   display: none !important;
 }
 
-/* Hide ALL member count related elements */
-.str-chat__header-livestream-subtitle,
-.str-chat__header-livestream-right,
-.str-chat__header-info,
-.str-chat__header-livestream .str-chat__header-livestream-subtitle,
-.str-chat__header-livestream .str-chat__header-livestream-right {
+/* Channel List Styling */
+.str-chat__channel-list {
+  background: transparent !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+.str-chat__channel-list-messenger__main {
+  background: transparent !important;
+  padding: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Channel Preview Items */
+.str-chat__channel-preview-messenger {
+  padding: 12px 16px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  border-radius: 12px !important;
+  margin: 0 8px 4px 8px !important;
+}
+
+.str-chat__channel-preview-messenger:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.str-chat__channel-preview-messenger--active {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Channel Avatar */
+.str-chat__channel-preview-messenger .str-chat__avatar {
+  width: 48px !important;
+  height: 48px !important;
+  margin-right: 12px !important;
+}
+
+.str-chat__avatar-image {
+  border-radius: 50% !important;
+}
+
+.str-chat__avatar-fallback {
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 50% !important;
+}
+
+/* Online Status */
+.str-chat__avatar--online::after {
+  background-color: #22c55e !important;
+  border: 2px solid #000 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Channel Info */
+.str-chat__channel-preview-messenger__name {
+  color: white !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  margin-bottom: 4px !important;
+}
+
+.str-chat__channel-preview-messenger__last-message {
+  color: #9ca3af !important;
+  font-size: 14px !important;
+}
+
+.str-chat__channel-preview-messenger__last-message-at {
+  color: #6b7280 !important;
+  font-size: 12px !important;
+}
+
+/* Hide member count in channel list */
+.str-chat__channel-preview-messenger__right {
   display: none !important;
 }
 
-/* Hide common member count elements by class patterns */
-.str-chat__header-livestream *[class*="subtitle"],
-.str-chat__header-livestream *[class*="info"],
-.str-chat__header-livestream *[class*="count"] {
+/* Messages Area */
+.str-chat__list {
+  background: transparent !important;
+  padding: 16px 24px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+.str-chat__message-simple {
+  margin-bottom: 8px !important;
+  padding: 0 !important;
+}
+
+/* Hide own avatar (Instagram style) */
+.str-chat__message-simple--me .str-chat__avatar {
   display: none !important;
 }
 
-/* Force hide subtitle area completely */
-.str-chat__header-livestream > div > div:last-child {
+.str-chat__message-simple--me {
+  flex-direction: row-reverse !important;
+}
+
+/* Message Input Area */
+.str-chat__input-flat {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: 60px !important;
+  flex-shrink: 0 !important;
+}
+
+.str-chat__input-flat-wrapper {
+  background: rgba(31, 41, 55, 0.5) !important;
+  border: 1px solid rgba(55, 65, 81, 0.5) !important;
+  border-radius: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.str-chat__textarea {
+  flex: 1 !important;
+}
+
+.str-chat__textarea textarea {
+  background: transparent !important;
+  border: none !important;
+  color: white !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
+  resize: none !important;
+  min-height: 44px !important;
+  width: 100% !important;
+}
+
+.str-chat__textarea textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+.str-chat__textarea textarea:focus {
+  outline: none !important;
+}
+
+/* Send Button */
+.str-chat__send-button {
+  background: transparent !important;
+  color: #0095f6 !important;
+  border: none !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 0 16px !important;
+  cursor: pointer !important;
+}
+
+.str-chat__send-button:hover {
+  color: #0084d6 !important;
+}
+
+/* Input Buttons */
+.str-chat__input-flat-emojiselect,
+.str-chat__input-flat-fileupload {
+  color: #9ca3af !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 8px !important;
+  cursor: pointer !important;
+}
+
+.str-chat__input-flat-emojiselect:hover,
+.str-chat__input-flat-fileupload:hover {
+  color: white !important;
+}
+
+/* Hide unnecessary elements */
+.str-chat__message-simple-status,
+.str-chat__message-simple-name,
+.str-chat__message-simple-timestamp {
   display: none !important;
+}
+
+/* Scrollbars */
+.str-chat__list::-webkit-scrollbar,
+.str-chat__channel-list-messenger__main::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.str-chat__list::-webkit-scrollbar-track,
+.str-chat__channel-list-messenger__main::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb,
+.str-chat__channel-list-messenger__main::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5) !important;
+  border-radius: 3px !important;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb:hover,
+.str-chat__channel-list-messenger__main::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7) !important;
+}
+
+/* Layout Structure */
+.str-chat__main-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.str-chat__container {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+.str-chat__channel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  max-height: 100% !important;
 }
 
 /* Remove horizontal scrollbars */

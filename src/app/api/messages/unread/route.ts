@@ -38,13 +38,21 @@ export async function GET(request: NextRequest) {
         members: { $in: [user.id] }
       })
 
-      // Calculate total unread count
+      // Calculate total unread count safely
       let totalUnreadCount = 0
       
       for (const channel of channels) {
-        const channelState = await channel.query()
-        const unreadCount = channelState.channel.state.unreadCount || 0
-        totalUnreadCount += unreadCount
+        try {
+          const channelState = await channel.query()
+          // Safely access unread count with multiple fallbacks
+          const unreadCount = channelState?.channel?.state?.unreadCount || 
+                             channelState?.unreadCount || 
+                             channel?.state?.unreadCount || 0
+          totalUnreadCount += unreadCount
+        } catch (error) {
+          console.error("Error querying channel:", error)
+          // Continue with other channels
+        }
       }
 
       return NextResponse.json({ 

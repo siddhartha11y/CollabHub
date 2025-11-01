@@ -7,7 +7,6 @@ import { StreamChat, Channel as StreamChannel } from "stream-chat"
 import {
   Chat,
   Channel,
-  ChannelHeader,
   ChannelList,
   MessageInput,
   MessageList,
@@ -37,6 +36,102 @@ import {
 } from "lucide-react"
 import "stream-chat-react/dist/css/v2/index.css"
 import "./stream-custom.css"
+
+// Custom Chat Header Component
+function CustomChatHeader({ client, onAudioCall, onVideoCall }: {
+  client: StreamChat | null
+  onAudioCall: () => void
+  onVideoCall: () => void
+}) {
+  const [otherUser, setOtherUser] = useState<any>(null)
+
+  useEffect(() => {
+    if (!client) return
+
+    const updateOtherUser = () => {
+      const activeChannel = client.activeChannel
+      if (activeChannel && activeChannel.state.members) {
+        const members = Object.values(activeChannel.state.members)
+        const other = members.find((member: any) => member.user?.id !== client.userID)
+        if (other?.user) {
+          setOtherUser({
+            name: other.user.name || other.user.id,
+            image: other.user.image,
+            online: other.user.online
+          })
+        }
+      }
+    }
+
+    // Listen for channel changes
+    client.on('channel.updated', updateOtherUser)
+    client.on('user.presence.changed', updateOtherUser)
+    
+    // Initial update
+    updateOtherUser()
+
+    return () => {
+      client.off('channel.updated', updateOtherUser)
+      client.off('user.presence.changed', updateOtherUser)
+    }
+  }, [client])
+
+  return (
+    <div className="bg-black/50 backdrop-blur-xl border-b border-gray-800/50 p-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {otherUser ? (
+          <>
+            <Avatar className="w-10 h-10">
+              <AvatarImage src={otherUser.image} />
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                {otherUser.name?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="text-white font-semibold text-base">{otherUser.name}</h3>
+              <p className="text-gray-400 text-sm">
+                {otherUser.online ? "Active now" : "Offline"}
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-600 rounded-full"></div>
+            <div>
+              <h3 className="text-white font-semibold">Chat</h3>
+              <p className="text-gray-400 text-sm">Loading...</p>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onAudioCall}
+          className="hover:bg-green-500/20 hover:text-green-400 transition-all duration-200"
+        >
+          <Phone className="w-5 h-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onVideoCall}
+          className="hover:bg-blue-500/20 hover:text-blue-400 transition-all duration-200"
+        >
+          <Video className="w-5 h-5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hover:bg-purple-500/20 hover:text-purple-400 transition-all duration-200"
+        >
+          <Info className="w-5 h-5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 interface User {
   id: string
@@ -380,37 +475,12 @@ STREAM_API_SECRET=your_secret
           <div className="flex-1 bg-gradient-to-b from-gray-900/50 to-black/50">
             <Channel>
               <Window>
-                {/* Custom Header with Stream's ChannelHeader */}
-                <div className="bg-black/50 backdrop-blur-xl border-b border-gray-800/50 p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ChannelHeader />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startCall('audio')}
-                      className="hover:bg-green-500/20 hover:text-green-400 transition-all duration-200"
-                    >
-                      <Phone className="w-5 h-5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startCall('video')}
-                      className="hover:bg-blue-500/20 hover:text-blue-400 transition-all duration-200"
-                    >
-                      <Video className="w-5 h-5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="hover:bg-purple-500/20 hover:text-purple-400 transition-all duration-200"
-                    >
-                      <Info className="w-5 h-5" />
-                    </Button>
-                  </div>
-                </div>
+                {/* COMPLETELY CUSTOM HEADER - No Stream components */}
+                <CustomChatHeader 
+                  client={client}
+                  onAudioCall={() => startCall('audio')}
+                  onVideoCall={() => startCall('video')}
+                />
 
                 {/* Messages Area */}
                 <MessageList />
