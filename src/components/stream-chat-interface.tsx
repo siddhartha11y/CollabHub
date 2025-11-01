@@ -7,7 +7,6 @@ import { StreamChat, Channel as StreamChannel } from "stream-chat"
 import {
   Chat,
   Channel,
-  ChannelHeader,
   ChannelList,
   MessageInput,
   MessageList,
@@ -385,7 +384,19 @@ STREAM_API_SECRET=your_secret
                   <div className="bg-black/50 backdrop-blur-xl border-b border-gray-800/50 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <ChannelHeader />
+                        {/* Custom Header without member count */}
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={session?.user?.image || undefined} />
+                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                              {session?.user?.name?.[0] || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h3 className="text-white font-semibold">Chat</h3>
+                            <p className="text-gray-400 text-sm">Active now</p>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
