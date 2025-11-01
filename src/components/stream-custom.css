@@ -68,9 +68,7 @@
 
 /* Hide any text that contains "members" or "online" */
 .str-chat__header-livestream *[class*="member"],
-.str-chat__header-livestream *[class*="online"],
-.str-chat__header-livestream *:contains("member"),
-.str-chat__header-livestream *:contains("online") {
+.str-chat__header-livestream *[class*="online"] {
   display: none !important;
 }
 
@@ -317,11 +315,10 @@
   display: none !important;
 }
 
-/* Hide any element containing member count text */
-.str-chat__header-livestream span:contains("member"),
-.str-chat__header-livestream span:contains("online"),
-.str-chat__header-livestream div:contains("member"),
-.str-chat__header-livestream div:contains("online") {
+/* Hide common member count elements by class patterns */
+.str-chat__header-livestream *[class*="subtitle"],
+.str-chat__header-livestream *[class*="info"],
+.str-chat__header-livestream *[class*="count"] {
   display: none !important;
 }
 
