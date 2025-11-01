@@ -7,6 +7,7 @@ import { StreamChat, Channel as StreamChannel } from "stream-chat"
 import {
   Chat,
   Channel,
+  ChannelHeader,
   ChannelList,
   MessageInput,
   MessageList,
@@ -258,209 +259,182 @@ STREAM_API_SECRET=your_secret
 
   return (
     <StreamVideo client={videoClient}>
-      <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex">
         <Chat client={client} theme="str-chat__theme-dark">
-          <div className="flex h-full">
-            {/* Enhanced Sidebar */}
-            <div className="w-[380px] bg-black/50 backdrop-blur-xl border-r border-gray-800/50 flex flex-col">
-              {/* Header with Back Button */}
-              <div className="p-6 border-b border-gray-800/50 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
-                <div className="flex items-center justify-between mb-4">
+          {/* Enhanced Sidebar */}
+          <div className="w-[380px] bg-black/50 backdrop-blur-xl border-r border-gray-800/50 flex flex-col">
+            {/* Header with Back Button */}
+            <div className="p-6 border-b border-gray-800/50 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/dashboard')}
+                  className="text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="hover:bg-white/10">
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="hover:bg-white/10">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar className="w-12 h-12 ring-2 ring-blue-500/50">
+                  <AvatarImage src={session?.user?.image || undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
+                    {session?.user?.name?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{session?.user?.name || "Messages"}</h2>
+                  <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                    Online
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Enhanced Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search people to chat..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setShowSearch(true)
+                  }}
+                  className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-400 focus:border-blue-500/50 focus:ring-blue-500/20 rounded-xl"
+                />
+                {searchQuery && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push('/dashboard')}
-                    className="text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="hover:bg-white/10">
-                      <Bell className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="hover:bg-white/10">
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 mb-4">
-                  <Avatar className="w-12 h-12 ring-2 ring-blue-500/50">
-                    <AvatarImage src={session?.user?.image || undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
-                      {session?.user?.name?.[0] || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">{session?.user?.name || "Messages"}</h2>
-                    <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
-                      <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
-                      Online
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Enhanced Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Search people to chat..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value)
-                      setShowSearch(true)
+                    onClick={() => {
+                      setSearchQuery("")
+                      setShowSearch(false)
                     }}
-                    className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-400 focus:border-blue-500/50 focus:ring-blue-500/20 rounded-xl"
-                  />
-                  {searchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery("")
-                        setShowSearch(false)
-                      }}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-700/50"
-                    >
-                      ×
-                    </Button>
-                  )}
-                </div>
-
-                {/* Search Results */}
-                {showSearch && searchResults.length > 0 && (
-                  <div className="mt-3 bg-gray-800/50 rounded-xl border border-gray-700/50 max-h-48 overflow-y-auto">
-                    {searchResults.map((user) => (
-                      <button
-                        key={user.id}
-                        onClick={() => startDirectMessage(user.id)}
-                        className="w-full p-3 flex items-center gap-3 hover:bg-gray-700/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
-                      >
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage src={user.image} />
-                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                            {user.name[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 text-left">
-                          <p className="text-white font-medium">{user.name}</p>
-                          <p className="text-gray-400 text-sm">{user.email}</p>
-                        </div>
-                        {user.isOnline && (
-                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-700/50"
+                  >
+                    ×
+                  </Button>
                 )}
               </div>
 
-              {/* Channel List */}
-              <div className="flex-1 overflow-hidden">
-                <ChannelList 
-                  filters={filters} 
-                  sort={sort}
-                  options={options}
-                />
-              </div>
-
-              {/* Quick Actions */}
-              <div className="p-4 border-t border-gray-800/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
-                <div className="flex justify-center gap-2">
-                  <Button size="sm" variant="ghost" className="hover:bg-white/10">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    New Chat
-                  </Button>
+              {/* Search Results */}
+              {showSearch && searchResults.length > 0 && (
+                <div className="mt-3 bg-gray-800/50 rounded-xl border border-gray-700/50 max-h-48 overflow-y-auto">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => startDirectMessage(user.id)}
+                      className="w-full p-3 flex items-center gap-3 hover:bg-gray-700/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={user.image} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                          {user.name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 text-left">
+                        <p className="text-white font-medium">{user.name}</p>
+                        <p className="text-gray-400 text-sm">{user.email}</p>
+                      </div>
+                      {user.isOnline && (
+                        <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                      )}
+                    </button>
+                  ))}
                 </div>
+              )}
+            </div>
+
+            {/* Channel List */}
+            <div className="flex-1 overflow-hidden">
+              <ChannelList 
+                filters={filters} 
+                sort={sort}
+                options={options}
+              />
+            </div>
+
+            {/* Quick Actions */}
+            <div className="p-4 border-t border-gray-800/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+              <div className="flex justify-center gap-2">
+                <Button size="sm" variant="ghost" className="hover:bg-white/10">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  New Chat
+                </Button>
               </div>
             </div>
+          </div>
 
-            {/* Enhanced Chat Area */}
-            <div className="flex-1 flex flex-col bg-gradient-to-b from-gray-900/50 to-black/50">
-              <Channel>
-                <Window>
-                  {/* Custom Header with Video/Audio Buttons */}
-                  <div className="bg-black/50 backdrop-blur-xl border-b border-gray-800/50 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {/* Custom Header without member count */}
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-10 h-10">
-                            <AvatarImage src={session?.user?.image || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                              {session?.user?.name?.[0] || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="text-white font-semibold">Chat</h3>
-                            <p className="text-gray-400 text-sm">Active now</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startCall('audio')}
-                          className="hover:bg-green-500/20 hover:text-green-400 transition-all duration-200"
-                        >
-                          <Phone className="w-5 h-5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startCall('video')}
-                          className="hover:bg-blue-500/20 hover:text-blue-400 transition-all duration-200"
-                        >
-                          <Video className="w-5 h-5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="hover:bg-purple-500/20 hover:text-purple-400 transition-all duration-200"
-                        >
-                          <Info className="w-5 h-5" />
-                        </Button>
-                      </div>
-                    </div>
+          {/* Enhanced Chat Area */}
+          <div className="flex-1 bg-gradient-to-b from-gray-900/50 to-black/50">
+            <Channel>
+              <Window>
+                {/* Custom Header with Stream's ChannelHeader */}
+                <div className="bg-black/50 backdrop-blur-xl border-b border-gray-800/50 p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <ChannelHeader />
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startCall('audio')}
+                      className="hover:bg-green-500/20 hover:text-green-400 transition-all duration-200"
+                    >
+                      <Phone className="w-5 h-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startCall('video')}
+                      className="hover:bg-blue-500/20 hover:text-blue-400 transition-all duration-200"
+                    >
+                      <Video className="w-5 h-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="hover:bg-purple-500/20 hover:text-purple-400 transition-all duration-200"
+                    >
+                      <Info className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
 
-                  {/* Messages with Custom Styling */}
-                  <div className="flex-1 relative">
-                    <MessageList />
-                    {/* Floating Action Buttons */}
-                    <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-                      <Button
-                        size="sm"
-                        className="rounded-full w-12 h-12 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 shadow-lg"
-                      >
-                        <Heart className="w-5 h-5" />
-                      </Button>
-                    </div>
-                  </div>
+                {/* Messages Area */}
+                <MessageList />
 
-                  {/* Enhanced Message Input */}
-                  <div className="bg-black/50 backdrop-blur-xl border-t border-gray-800/50 p-4">
-                    <div className="flex items-center gap-3">
-                      <Button variant="ghost" size="sm" className="hover:bg-white/10">
-                        <Camera className="w-5 h-5" />
-                      </Button>
-                      <div className="flex-1">
-                        <MessageInput />
-                      </div>
-                      <Button variant="ghost" size="sm" className="hover:bg-white/10">
-                        <Smile className="w-5 h-5" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="hover:bg-white/10">
-                        <Mic className="w-5 h-5" />
-                      </Button>
+                {/* Message Input Area */}
+                <div className="bg-black/50 backdrop-blur-xl border-t border-gray-800/50 p-4">
+                  <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="sm" className="hover:bg-white/10 shrink-0">
+                      <Camera className="w-5 h-5" />
+                    </Button>
+                    <div className="flex-1 min-w-0">
+                      <MessageInput />
                     </div>
+                    <Button variant="ghost" size="sm" className="hover:bg-white/10 shrink-0">
+                      <Smile className="w-5 h-5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="hover:bg-white/10 shrink-0">
+                      <Mic className="w-5 h-5" />
+                    </Button>
                   </div>
-                </Window>
-                <Thread />
-              </Channel>
-            </div>
+                </div>
+              </Window>
+              <Thread />
+            </Channel>
           </div>
         </Chat>
 

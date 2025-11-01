@@ -6,9 +6,39 @@
   overflow: hidden !important;
 }
 
-/* Hide default headers since we're using custom ones */
-.str-chat__channel-list-header,
+/* Hide channel list header but show chat header */
+.str-chat__channel-list-header {
+  display: none !important;
+}
+
+/* Show and style the chat header */
 .str-chat__header-livestream {
+  display: flex !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.str-chat__header-livestream-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.str-chat__header-livestream .str-chat__avatar {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.str-chat__header-livestream-title {
+  color: white !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+}
+
+/* Hide member count in header subtitle */
+.str-chat__header-livestream-subtitle {
   display: none !important;
 }
 
@@ -263,15 +293,38 @@
   background: rgba(107, 114, 128, 0.7) !important;
 }
 
-/* Ensure Window component takes full height */
+/* Ensure proper layout structure */
 .str-chat__main-panel {
   display: flex !important;
   flex-direction: column !important;
-  height: 100% !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
 }
 
 .str-chat__container {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
+  max-height: 100% !important;
+}
+
+.str-chat__channel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Ensure message list takes available space */
+.str-chat__list {
+  flex: 1 !important;
+  min-height: 0 !important;
+  max-height: calc(100vh - 200px) !important;
+}
+
+/* Ensure input area is always visible at bottom */
+.str-chat__input-flat {
+  flex-shrink: 0 !important;
+  position: relative !important;
+  bottom: 0 !important;
 }
