@@ -90,21 +90,13 @@ export default function SignIn() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      const result = await signIn("google", { 
-        callbackUrl: "/dashboard",
-        redirect: false 
+      // Use direct redirect for Google OAuth
+      await signIn("google", { 
+        callbackUrl: "/dashboard"
       })
-      
-      if (result?.error) {
-        setError("root", { message: "Google sign in failed. Please try again." })
-      } else if (result?.url) {
-        // Redirect manually to handle the response properly
-        window.location.href = result.url
-      }
     } catch (error) {
       console.error("Google sign in error:", error)
       setError("root", { message: "Google sign in failed. Please try again." })
-    } finally {
       setIsLoading(false)
     }
   }
