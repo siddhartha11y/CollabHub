@@ -30,7 +30,6 @@ import {
   Settings,
   Bell,
   Sparkles,
-  Heart,
   Smile,
   Camera,
   Mic,
@@ -38,6 +37,43 @@ import {
 } from "lucide-react"
 import "stream-chat-react/dist/css/v2/index.css"
 import "./stream-custom.css"
+import { useUserImage } from "@/hooks/use-user-image"
+
+// User Avatar Component
+function UserAvatar({ userId, userName }: { userId: string, userName: string }) {
+  const { imageUrl } = useUserImage(userId)
+  return (
+    <Avatar className="w-10 h-10">
+      <AvatarImage src={imageUrl || undefined} />
+      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+        {userName[0]}
+      </AvatarFallback>
+    </Avatar>
+  )
+}
+
+// User Profile Section Component
+function UserProfileSection({ userId, userName }: { userId?: string, userName?: string | null }) {
+  const { imageUrl } = useUserImage(userId)
+  
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <Avatar className="w-12 h-12 ring-2 ring-blue-500/50">
+        <AvatarImage src={imageUrl || undefined} />
+        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
+          {userName?.[0] || "U"}
+        </AvatarFallback>
+      </Avatar>
+      <div>
+        <h2 className="text-xl font-bold text-white">{userName || "Messages"}</h2>
+        <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
+          <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+          Online
+        </Badge>
+      </div>
+    </div>
+  )
+}
 
 // Custom Chat Header Component using Stream Context
 function CustomChatHeader({ onAudioCall, onVideoCall }: {
@@ -46,7 +82,9 @@ function CustomChatHeader({ onAudioCall, onVideoCall }: {
 }) {
   const { client } = useChatContext()
   const { channel } = useChannelStateContext()
-  const [otherUser, setOtherUser] = useState<any>(null)
+  const [otherUserId, setOtherUserId] = useState<string | null>(null)
+  const [otherUserName, setOtherUserName] = useState<string | null>(null)
+  const { imageUrl } = useUserImage(otherUserId || undefined)
 
   useEffect(() => {
     if (!channel || !client) return
@@ -55,24 +93,17 @@ function CustomChatHeader({ onAudioCall, onVideoCall }: {
       const members = Object.values(channel.state.members || {})
       const otherMember = members.find((member: any) => member.user_id !== client.userID)
       
-      if (otherMember) {
-        // Get user info from database since Stream doesn't have images
+      if (otherMember && otherMember.user_id) {
+        setOtherUserId(otherMember.user_id)
+        
+        // Get user name from database
         fetch(`/api/users/${otherMember.user_id}`)
           .then(res => res.json())
           .then(userData => {
-            setOtherUser({
-              name: userData.name || otherMember.user_id,
-              image: userData.image,
-              online: true // Assume online for now
-            })
+            setOtherUserName(userData.name || otherMember.user_id || 'Unknown')
           })
           .catch(() => {
-            // Fallback to basic info
-            setOtherUser({
-              name: otherMember.user_id,
-              image: null,
-              online: true
-            })
+            setOtherUserName(otherMember.user_id || 'Unknown')
           })
       }
     }
@@ -92,19 +123,17 @@ function CustomChatHeader({ onAudioCall, onVideoCall }: {
   return (
     <div className="bg-black/50 backdrop-blur-xl border-b border-gray-800/50 p-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        {otherUser ? (
+        {otherUserId ? (
           <>
             <Avatar className="w-10 h-10">
-              <AvatarImage src={otherUser.image} />
+              <AvatarImage src={imageUrl || undefined} />
               <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                {otherUser.name?.[0]?.toUpperCase() || "U"}
+                {otherUserName?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="text-white font-semibold text-base">{otherUser.name}</h3>
-              <p className="text-gray-400 text-sm">
-                {otherUser.online ? "Active now" : "Offline"}
-              </p>
+              <h3 className="text-white font-semibold text-base">{otherUserName}</h3>
+              <p className="text-gray-400 text-sm">Active now</p>
             </div>
           </>
         ) : (
@@ -164,7 +193,7 @@ export function StreamChatInterface() {
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [showSearch, setShowSearch] = useState(false)
   const [activeCall, setActiveCall] = useState<Call | null>(null)
-  const [selectedChannel, setSelectedChannel] = useState<StreamChannel | null>(null)
+
 
   useEffect(() => {
     const initChat = async () => {
@@ -262,17 +291,16 @@ export function StreamChatInterface() {
   }, [client])
 
   const startCall = useCallback(async (callType: 'audio' | 'video') => {
-    if (!videoClient || !selectedChannel) return
+    if (!videoClient) return
 
     try {
-      const callId = `${selectedChannel.id}-${Date.now()}`
-      const call = videoClient.call('default', callId)
-      
-      const memberIds = selectedChannel.state.members ? Object.keys(selectedChannel.state.members) : []
+      // We'll get the current channel from the context in the header component
+      const callId = `call-${Date.now()}`
+      const call = videoClient.call(callType === 'video' ? 'default' : 'audio', callId)
       
       await call.getOrCreate({
         data: {
-          members: memberIds.map(id => ({ user_id: id })),
+          members: [{ user_id: client?.userID || '' }],
         },
       })
 
@@ -280,7 +308,7 @@ export function StreamChatInterface() {
     } catch (error) {
       console.error("Failed to start call:", error)
     }
-  }, [videoClient, selectedChannel])
+  }, [videoClient, client])
 
   useEffect(() => {
     const delayedSearch = setTimeout(() => {
@@ -393,20 +421,7 @@ STREAM_API_SECRET=your_secret
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 mb-4">
-                <Avatar className="w-12 h-12 ring-2 ring-blue-500/50">
-                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold">
-                    {session?.user?.name?.[0] || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-xl font-bold text-white">{session?.user?.name || "Messages"}</h2>
-                  <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
-                    <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
-                    Online
-                  </Badge>
-                </div>
-              </div>
+              <UserProfileSection userId={session?.user?.id} userName={session?.user?.name} />
 
               {/* Enhanced Search */}
               <div className="relative">
@@ -444,12 +459,7 @@ STREAM_API_SECRET=your_secret
                       onClick={() => startDirectMessage(user.id)}
                       className="w-full p-3 flex items-center gap-3 hover:bg-gray-700/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                     >
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={user.image} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                          {user.name[0]}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar userId={user.id} userName={user.name} />
                       <div className="flex-1 text-left">
                         <p className="text-white font-medium">{user.name}</p>
                         <p className="text-gray-400 text-sm">{user.email}</p>

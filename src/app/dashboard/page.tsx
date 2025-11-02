@@ -3,6 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Users, Plus, Settings, LogOut } from "lucide-react"
 import { redirect } from "next/navigation"
@@ -12,6 +13,24 @@ import { SimpleNotificationBell } from "@/components/simple-notification-bell"
 import { TestNotificationButton } from "@/components/test-notification-button"
 import { UserSearch } from "@/components/user-search"
 import { MessageNotificationBadge } from "@/components/message-notification-badge"
+import { useUserImage } from "@/hooks/use-user-image"
+
+// Component to show user profile with image
+function UserProfileLink({ userId, userName }: { userId?: string, userName?: string | null }) {
+  const { imageUrl } = useUserImage(userId)
+  
+  return (
+    <Link href="/profile" className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-2 py-1 transition-colors">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={imageUrl || undefined} />
+        <AvatarFallback className="bg-blue-600 text-white text-sm">
+          {userName?.[0] || "U"}
+        </AvatarFallback>
+      </Avatar>
+      <span className="text-sm font-medium">{userName}</span>
+    </Link>
+  )
+}
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
@@ -75,14 +94,7 @@ export default function Dashboard() {
               <TestNotificationButton />
               <SimpleNotificationBell />
               <ThemeToggle />
-              <Link href="/profile" className="flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-2 py-1 transition-colors">
-                <img 
-                  src={session.user?.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(session.user?.name || "User") + "&background=3b82f6&color=fff"} 
-                  alt="Profile" 
-                  className="h-8 w-8 rounded-full"
-                />
-                <span className="text-sm font-medium">{session.user?.name}</span>
-              </Link>
+              <UserProfileLink userId={session.user?.id} userName={session.user?.name} />
               <Button variant="outline" size="sm" onClick={() => signOut()}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
