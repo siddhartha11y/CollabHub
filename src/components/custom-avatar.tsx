@@ -19,11 +19,15 @@ export function CustomAvatar({ userId, userName, size = "md", className = "" }: 
     lg: "w-12 h-12"
   }
   
+  // Safety check for userName
+  const displayName = userName || "Unknown"
+  const fallbackLetter = displayName[0]?.toUpperCase() || "U"
+  
   return (
     <Avatar className={`${sizeClasses[size]} ${className}`}>
       <AvatarImage src={imageUrl || undefined} />
       <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold">
-        {userName?.[0]?.toUpperCase() || "U"}
+        {fallbackLetter}
       </AvatarFallback>
     </Avatar>
   )
