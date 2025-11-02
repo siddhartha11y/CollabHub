@@ -566,3 +566,56 @@
   position: relative !important;
   bottom: 0 !important;
 }
+
+/* COMPLETELY OVERRIDE ALL STREAM AVATARS */
+.str-chat__avatar,
+.str-chat__avatar-image,
+.str-chat__message-simple-avatar,
+.str-chat__channel-preview-avatar,
+.str-chat__message-avatar,
+.str-chat__channel-preview-messenger .str-chat__avatar {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove avatar spacing from messages */
+.str-chat__message-simple__content {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* Remove avatar spacing from channel previews */
+.str-chat__channel-preview-messenger__content {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+/* Custom avatar positioning for messages */
+.custom-message-avatar {
+  position: absolute;
+  left: -50px;
+  top: 0;
+  z-index: 10;
+}
+
+/* Adjust message container to make room for custom avatars */
+.str-chat__message-simple {
+  position: relative;
+  margin-left: 55px !important;
+}
+
+/* Don't add margin for own messages */
+.str-chat__message-simple--me {
+  margin-left: 0 !important;
+  margin-right: 55px !important;
+}
+
+.str-chat__message-simple--me .custom-message-avatar {
+  left: auto;
+  right: -50px;
+}

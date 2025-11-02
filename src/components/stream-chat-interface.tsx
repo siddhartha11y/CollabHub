@@ -38,19 +38,11 @@ import {
 import "stream-chat-react/dist/css/v2/index.css"
 import "./stream-custom.css"
 import { useUserImage } from "@/hooks/use-user-image"
+import { CustomAvatar } from "./custom-avatar"
+import { CustomMessage } from "./custom-message"
+import { CustomChannelPreview } from "./custom-channel-preview"
 
-// User Avatar Component
-function UserAvatar({ userId, userName }: { userId: string, userName: string }) {
-  const { imageUrl } = useUserImage(userId)
-  return (
-    <Avatar className="w-10 h-10">
-      <AvatarImage src={imageUrl || undefined} />
-      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-        {userName[0]}
-      </AvatarFallback>
-    </Avatar>
-  )
-}
+
 
 // User Profile Section Component
 function UserProfileSection({ userId, userName }: { userId?: string, userName?: string | null }) {
@@ -125,12 +117,7 @@ function CustomChatHeader({ onAudioCall, onVideoCall }: {
       <div className="flex items-center gap-3">
         {otherUserId ? (
           <>
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={imageUrl || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                {otherUserName?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
+            <CustomAvatar userId={otherUserId} userName={otherUserName || 'Unknown'} />
             <div>
               <h3 className="text-white font-semibold text-base">{otherUserName}</h3>
               <p className="text-gray-400 text-sm">Active now</p>
@@ -459,7 +446,7 @@ STREAM_API_SECRET=your_secret
                       onClick={() => startDirectMessage(user.id)}
                       className="w-full p-3 flex items-center gap-3 hover:bg-gray-700/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                     >
-                      <UserAvatar userId={user.id} userName={user.name} />
+                      <CustomAvatar userId={user.id} userName={user.name} />
                       <div className="flex-1 text-left">
                         <p className="text-white font-medium">{user.name}</p>
                         <p className="text-gray-400 text-sm">{user.email}</p>
@@ -479,6 +466,7 @@ STREAM_API_SECRET=your_secret
                 filters={filters} 
                 sort={sort}
                 options={options}
+                Preview={CustomChannelPreview}
               />
             </div>
 
@@ -504,7 +492,7 @@ STREAM_API_SECRET=your_secret
                 />
 
                 {/* Messages Area */}
-                <MessageList />
+                <MessageList Message={CustomMessage} />
 
                 {/* Message Input Area */}
                 <div className="bg-black/50 backdrop-blur-xl border-t border-gray-800/50 p-4">
