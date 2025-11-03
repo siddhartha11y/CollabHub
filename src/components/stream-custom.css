@@ -583,39 +583,90 @@
   padding: 0 !important;
 }
 
-/* Remove avatar spacing from messages */
-.str-chat__message-simple__content {
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-}
-
 /* Remove avatar spacing from channel previews */
 .str-chat__channel-preview-messenger__content {
   padding-left: 0 !important;
   margin-left: 0 !important;
 }
 
-/* Custom avatar positioning for messages */
-.custom-message-avatar {
-  position: absolute;
-  left: -50px;
-  top: 0;
-  z-index: 10;
-}
-
-/* Adjust message container to make room for custom avatars */
-.str-chat__message-simple {
-  position: relative;
-  margin-left: 55px !important;
-}
-
-/* Don't add margin for own messages */
-.str-chat__message-simple--me {
+/* FIX DOUBLE BUBBLE ISSUE - Remove all default message styling */
+.str-chat__message-simple__content {
   margin-left: 0 !important;
-  margin-right: 55px !important;
+  padding-left: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
-.str-chat__message-simple--me .custom-message-avatar {
-  left: auto;
-  right: -50px;
+/* Custom message container with avatar space */
+.custom-message-container {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  padding: 0 16px !important;
+}
+
+/* Own messages - align right, no avatar */
+.custom-message-container.own-message {
+  flex-direction: row-reverse !important;
+  justify-content: flex-start !important;
+}
+
+.custom-message-container.own-message .custom-message-avatar {
+  display: none !important;
+}
+
+/* Other messages - align left with avatar */
+.custom-message-container.other-message {
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+}
+
+/* Message content wrapper */
+.custom-message-content {
+  max-width: 400px !important;
+  flex-shrink: 1 !important;
+}
+
+/* SINGLE CLEAN BUBBLE - Override all Stream bubble styling */
+.str-chat__message-simple-text,
+.str-chat__message-simple-text-inner {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* The ONLY styled bubble */
+.custom-message-bubble {
+  border-radius: 18px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  line-height: 18px !important;
+  word-wrap: break-word !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+  position: relative !important;
+}
+
+/* Own message bubble - blue */
+.custom-message-bubble.own {
+  background: #0095f6 !important;
+  color: white !important;
+}
+
+/* Other message bubble - gray */
+.custom-message-bubble.other {
+  background: #262626 !important;
+  color: white !important;
+  border: 1px solid #363636 !important;
+}
+
+/* Remove all default message positioning */
+.str-chat__message-simple {
+  margin: 0 !important;
+  padding: 0 !important;
+  position: static !important;
 }

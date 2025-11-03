@@ -1,24 +1,24 @@
 "use client"
 
 import { CustomAvatar } from "./custom-avatar"
-import { MessageSimple, useChatContext } from "stream-chat-react"
+import { useChatContext } from "stream-chat-react"
 
 export function CustomMessage(props: any) {
   const { message } = props
   const { client } = useChatContext()
   
   // Safety checks
-  if (!message || !message.user) {
-    return <MessageSimple {...props} />
+  if (!message || !message.user || !message.text) {
+    return null
   }
   
   const isOwn = message.user.id === client?.userID
   
   return (
-    <div className="relative">
-      {/* Custom Avatar - only show for other users' messages */}
-      {!isOwn && message.user.id && (
-        <div className="custom-message-avatar">
+    <div className={`custom-message-container ${isOwn ? 'own-message' : 'other-message'}`}>
+      {/* Avatar for other users only */}
+      {!isOwn && (
+        <div className="custom-message-avatar flex-shrink-0">
           <CustomAvatar 
             userId={message.user.id} 
             userName={message.user.name || message.user.id || 'Unknown'} 
@@ -27,8 +27,12 @@ export function CustomMessage(props: any) {
         </div>
       )}
       
-      {/* Default Stream Message Component */}
-      <MessageSimple {...props} />
+      {/* Message content */}
+      <div className="custom-message-content">
+        <div className={`custom-message-bubble ${isOwn ? 'own' : 'other'}`}>
+          {message.text}
+        </div>
+      </div>
     </div>
   )
 }
