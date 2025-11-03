@@ -7,14 +7,19 @@ export function CustomMessage(props: any) {
   const { message } = props
   const { client } = useChatContext()
   
+  // Debug logging
+  console.log('CustomMessage rendered:', { message, hasText: !!message?.text, userId: message?.user?.id })
+  
   // Safety checks - if no message or user, fall back to default
   if (!message || !message.user) {
+    console.log('No message or user, falling back to MessageSimple')
     return <MessageSimple {...props} />
   }
   
   // If it's a text message, use our custom layout
   if (message.text) {
     const isOwn = message.user.id === client?.userID
+    console.log('Rendering custom message:', { text: message.text, isOwn, userId: message.user.id })
     
     return (
       <div className={`custom-message-container ${isOwn ? 'own-message' : 'other-message'}`}>
@@ -40,5 +45,6 @@ export function CustomMessage(props: any) {
   }
   
   // For non-text messages (attachments, etc.), fall back to default Stream component
+  console.log('Non-text message, falling back to MessageSimple')
   return <MessageSimple {...props} />
 }

@@ -567,44 +567,18 @@
   bottom: 0 !important;
 }
 
-/* COMPLETELY OVERRIDE ALL STREAM AVATARS */
-.str-chat__avatar,
-.str-chat__avatar-image,
-.str-chat__message-simple-avatar,
-.str-chat__channel-preview-avatar,
-.str-chat__message-avatar,
-.str-chat__channel-preview-messenger .str-chat__avatar {
+/* COMPLETELY HIDE ALL STREAM COMPONENTS WHEN USING CUSTOM */
+.str-chat__message-list .str-chat__message-simple {
   display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 
-/* Remove avatar spacing from channel previews */
-.str-chat__channel-preview-messenger__content {
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
-
-/* FIX DOUBLE BUBBLE ISSUE - Remove all default message styling */
-.str-chat__message-simple__content {
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Custom message container with avatar space */
+/* Show only our custom message containers */
 .custom-message-container {
   display: flex !important;
   align-items: flex-start !important;
-  gap: 8px !important;
-  margin-bottom: 8px !important;
-  padding: 0 16px !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+  padding: 0 20px !important;
 }
 
 /* Own messages - align right, no avatar */
@@ -629,22 +603,12 @@
   flex-shrink: 1 !important;
 }
 
-/* SINGLE CLEAN BUBBLE - Override all Stream bubble styling */
-.str-chat__message-simple-text,
-.str-chat__message-simple-text-inner {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
 /* The ONLY styled bubble */
 .custom-message-bubble {
   border-radius: 18px !important;
-  padding: 8px 12px !important;
+  padding: 10px 14px !important;
   font-size: 14px !important;
-  line-height: 18px !important;
+  line-height: 20px !important;
   word-wrap: break-word !important;
   display: inline-block !important;
   max-width: 100% !important;
@@ -664,9 +628,19 @@
   border: 1px solid #363636 !important;
 }
 
-/* Remove all default message positioning */
-.str-chat__message-simple {
-  margin: 0 !important;
-  padding: 0 !important;
-  position: static !important;
+/* Hide ALL Stream avatars completely */
+.str-chat__avatar,
+.str-chat__avatar-image,
+.str-chat__message-simple-avatar,
+.str-chat__channel-preview-avatar,
+.str-chat__message-avatar {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Remove avatar spacing from channel previews */
+.str-chat__channel-preview-messenger__content {
+  padding-left: 0 !important;
+  margin-left: 0 !important;
 }
