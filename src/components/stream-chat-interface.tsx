@@ -492,7 +492,7 @@ STREAM_API_SECRET=your_secret
                 />
 
                 {/* Messages Area */}
-                <MessageList Message={CustomMessage} />
+                <MessageList />
 
                 {/* Message Input Area */}
                 <div className="bg-black/50 backdrop-blur-xl border-t border-gray-800/50 p-4">
