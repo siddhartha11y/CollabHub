@@ -48,6 +48,11 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // STRICT EMAIL VERIFICATION CHECK
+        if (!user.emailVerified) {
+          throw new Error("Please verify your email before signing in. Check your inbox for the verification link.")
+        }
+
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.password

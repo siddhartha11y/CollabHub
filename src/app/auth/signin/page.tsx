@@ -51,7 +51,14 @@ export default function SignIn() {
       })
       
       if (result?.error) {
-        setError("root", { message: "Invalid email or password" })
+        // Check if it's an email verification error
+        if (result.error.includes("verify your email")) {
+          setError("root", { 
+            message: "Please verify your email before signing in. Check your inbox for the verification link." 
+          })
+        } else {
+          setError("root", { message: "Invalid email or password" })
+        }
       } else if (result?.ok) {
         router.push("/dashboard")
       }
