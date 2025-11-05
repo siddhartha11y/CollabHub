@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Users, Loader2, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
 
-export default function AutoLogin() {
+function AutoLoginContent() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
   const [message, setMessage] = useState("")
   const router = useRouter()
@@ -120,5 +120,33 @@ export default function AutoLogin() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function AutoLogin() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="flex items-center justify-center mb-8">
+            <Link href="/" className="flex items-center space-x-2">
+              <Users className="h-8 w-8 text-blue-600" />
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">CollabHub</span>
+            </Link>
+          </div>
+          <Card>
+            <CardHeader className="text-center">
+              <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+              <CardTitle>Loading...</CardTitle>
+              <CardDescription>
+                Please wait while we prepare your sign-in.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    }>
+      <AutoLoginContent />
+    </Suspense>
   )
 }
