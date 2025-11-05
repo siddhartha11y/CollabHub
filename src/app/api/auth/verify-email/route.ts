@@ -50,23 +50,44 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Find user by email from token
-    const user = await prisma.user.findUnique({
-      where: { email: verificationToken.identifier }
-    })
-
-    if (!user) {
+    // Parse registration data from token identifier
+    const registrationData = verificationToken.identifier.split('|')
+    
+    if (registrationData.length !== 3) {
       return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
+        { error: "Invalid verification token format" },
+        { status: 400 }
       )
     }
-
-    // Verify the user's email
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerified: new Date() }
+    
+    const [email, name, hashedPassword] = registrationData
+    
+    // Check if user already exists (shouldn't happen, but safety check)
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
     })
+    
+    if (existingUser) {
+      // User already exists, just verify them
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { emailVerified: new Date() }
+      })
+    } else {
+      // Create the user now that email is verified
+      const { generateUsernameFromEmail } = await import("@/lib/username")
+      const username = await generateUsernameFromEmail(email)
+      
+      await prisma.user.create({
+        data: {
+          name,
+          email,
+          username,
+          password: hashedPassword,
+          emailVerified: new Date(), // Verified immediately
+        }
+      })
+    }
 
     // Delete the verification token
     await prisma.verificationToken.delete({

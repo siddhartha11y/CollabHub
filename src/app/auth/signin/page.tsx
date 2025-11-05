@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import React from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -25,7 +26,18 @@ export default function SignIn() {
   const [emailSent, setEmailSent] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [loginMode, setLoginMode] = useState<"password" | "magic">("password")
+  const [verificationSuccess, setVerificationSuccess] = useState(false)
   const router = useRouter()
+  
+  // Check for verification success
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('verified') === 'true') {
+      setVerificationSuccess(true)
+      // Clear the URL parameter
+      window.history.replaceState({}, '', '/auth/signin')
+    }
+  }, [])
 
   const {
     register,
@@ -153,6 +165,15 @@ export default function SignIn() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Verification Success Message */}
+            {verificationSuccess && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm text-green-800">
+                  ✅ Email verified successfully! You can now sign in to your account.
+                </p>
+              </div>
+            )}
+            
             {/* Google Sign In */}
             <Button
               variant="outline"

@@ -129,30 +129,31 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // THIRD: Only create user and token AFTER email is successfully sent
+    // THIRD: Only create verification token AFTER email is successfully sent
+    // DO NOT create user yet - user will be created when they verify their email
     try {
-      await prisma.$transaction(async (tx) => {
-        // Create user (NOT VERIFIED)
-        await tx.user.create({
-          data: {
-            name,
-            email,
-            password: hashedPassword,
-            emailVerified: null, // MUST be null until verified
-          }
-        })
-
-        // Create verification token
-        const createdToken = await tx.verificationToken.create({
-          data: {
-            identifier: email,
-            token: verificationToken,
-            expires: tokenExpiry,
-          }
-        })
-        
-        console.log("Created verification token in DB:", createdToken)
+      const createdToken = await prisma.verificationToken.create({
+        data: {
+          identifier: email,
+          token: verificationToken,
+          expires: tokenExpiry,
+        }
       })
+      
+      console.log("Created verification token in DB:", createdToken)
+      
+      // Store the registration data temporarily in the token identifier
+      // We'll use a special format: email|name|hashedPassword
+      const registrationData = `${email}|${name}|${hashedPassword}`
+      
+      // Update the token to include registration data
+      await prisma.verificationToken.update({
+        where: { token: verificationToken },
+        data: {
+          identifier: registrationData
+        }
+      })
+      
     } catch (dbError) {
       console.error("Database error:", dbError)
       return NextResponse.json(
