@@ -7,6 +7,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const token = searchParams.get("token")
 
+    console.log("Verification attempt with token:", token)
+
     if (!token) {
       return NextResponse.json(
         { error: "Verification token is required" },
@@ -19,7 +21,15 @@ export async function GET(req: NextRequest) {
       where: { token }
     })
 
+    console.log("Found verification token:", verificationToken)
+
     if (!verificationToken) {
+      // Check if token exists in database at all
+      const allTokens = await prisma.verificationToken.findMany({
+        select: { token: true, identifier: true, expires: true }
+      })
+      console.log("All tokens in database:", allTokens)
+      
       return NextResponse.json(
         { error: "Invalid or expired verification token" },
         { status: 400 }

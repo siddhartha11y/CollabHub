@@ -64,13 +64,7 @@ export default function Register() {
         return
       }
 
-      // Registration successful, now send verification email
-      await signIn("email", { 
-        email: data.email, 
-        redirect: false,
-        callbackUrl: "/dashboard" 
-      })
-      
+      // Registration successful - just show success message
       setRegistrationSuccess(true)
     } catch (error) {
       setError("root", { message: "Something went wrong. Please try again." })

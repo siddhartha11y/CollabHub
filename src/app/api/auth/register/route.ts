@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString("hex")
     const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    
+    console.log("Generated verification token:", verificationToken)
+    console.log("Token expiry:", tokenExpiry)
 
     // FIRST: Test email configuration by sending the email
     const transporter = nodemailer.createTransport({
@@ -140,13 +143,15 @@ export async function POST(req: NextRequest) {
         })
 
         // Create verification token
-        await tx.verificationToken.create({
+        const createdToken = await tx.verificationToken.create({
           data: {
             identifier: email,
             token: verificationToken,
             expires: tokenExpiry,
           }
         })
+        
+        console.log("Created verification token in DB:", createdToken)
       })
     } catch (dbError) {
       console.error("Database error:", dbError)
