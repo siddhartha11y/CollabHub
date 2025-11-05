@@ -94,8 +94,21 @@ export async function GET(req: NextRequest) {
       where: { token }
     })
 
-    // Redirect to success page
-    return NextResponse.redirect(new URL("/auth/signin?verified=true", req.url))
+    // Create a temporary login token for auto-signin
+    const loginToken = crypto.randomBytes(32).toString("hex")
+    const loginTokenExpiry = new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
+    
+    // Store login token temporarily
+    await prisma.verificationToken.create({
+      data: {
+        identifier: `login:${email}`,
+        token: loginToken,
+        expires: loginTokenExpiry,
+      }
+    })
+    
+    // Redirect to auto-login page
+    return NextResponse.redirect(new URL(`/auth/auto-login?token=${loginToken}`, req.url))
   } catch (error) {
     console.error("Email verification error:", error)
     return NextResponse.json(

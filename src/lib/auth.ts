@@ -30,10 +30,11 @@ export const authOptions: NextAuthOptions = {
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        autoLogin: { label: "Auto Login", type: "text" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email) {
           return null
         }
 
@@ -43,13 +44,28 @@ export const authOptions: NextAuthOptions = {
           }
         })
 
-        if (!user || !user.password) {
+        if (!user) {
           return null
         }
 
         // STRICT EMAIL VERIFICATION CHECK
         if (!user.emailVerified) {
           throw new Error("Please verify your email before signing in. Check your inbox for the verification link.")
+        }
+
+        // Handle auto-login (from email verification)
+        if (credentials.autoLogin === "true") {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          }
+        }
+
+        // Handle regular password login
+        if (!credentials.password || !user.password) {
+          return null
         }
 
         const isPasswordValid = await bcrypt.compare(
