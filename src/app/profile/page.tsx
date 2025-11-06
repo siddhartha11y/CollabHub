@@ -7,6 +7,26 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { 
   User, 
   Mail, 
@@ -19,7 +39,9 @@ import {
   Calendar,
   Clock,
   Settings,
-  ArrowLeft
+  ArrowLeft,
+  Trash2,
+  AlertTriangle
 } from "lucide-react"
 import Link from "next/link"
 
@@ -27,6 +49,9 @@ export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -126,6 +151,35 @@ export default function ProfilePage() {
 
     fetchProfile()
   }, [session, status, router])
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true)
+    try {
+      const response = await fetch("/api/auth/delete-account", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: profile.email
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setShowConfirmDialog(false)
+        setShowDeleteDialog(true) // Show "check email" dialog
+      } else {
+        alert(result.error || "Failed to initiate account deletion")
+      }
+    } catch (error) {
+      console.error("Delete account error:", error)
+      alert("Something went wrong. Please try again.")
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
 
   if (status === "loading" || loading) {
     return (
@@ -458,8 +512,160 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+
+          {/* Danger Zone - Account Deletion */}
+          <div className="bg-red-50/70 dark:bg-red-900/20 backdrop-blur-md rounded-2xl shadow-lg border border-red-200/50 dark:border-red-800/50 p-6">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 ml-3">Danger Zone ⚠️</h3>
+            </div>
+            
+            <div className="bg-white/50 dark:bg-red-900/30 rounded-xl p-4 border border-red-200 dark:border-red-800">
+              <div className="flex items-start space-x-4">
+                <Trash2 className="h-6 w-6 text-red-500 mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">Delete Account</h4>
+                  <p className="text-red-700 dark:text-red-200 text-sm mb-4 leading-relaxed">
+                    Permanently delete your CollabHub account and all associated data. This action cannot be undone. 
+                    You will receive an email confirmation before your account is deleted.
+                  </p>
+                  <div className="bg-red-100 dark:bg-red-900/50 rounded-lg p-3 mb-4">
+                    <p className="text-red-800 dark:text-red-200 text-xs font-medium">
+                      ⚠️ This will permanently delete:
+                    </p>
+                    <ul className="text-red-700 dark:text-red-300 text-xs mt-2 space-y-1 ml-4">
+                      <li>• Your profile and personal information</li>
+                      <li>• All workspaces you created</li>
+                      <li>• Your tasks, documents, and files</li>
+                      <li>• Chat messages and conversations</li>
+                      <li>• All account data and settings</li>
+                    </ul>
+                  </div>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="destructive" 
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete My Account
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="max-w-md">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center text-red-600">
+                          <AlertTriangle className="h-5 w-5 mr-2" />
+                          Are you absolutely sure?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-left space-y-3">
+                          <p>This action cannot be undone. This will permanently delete your account and remove all your data from our servers.</p>
+                          <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg">
+                            <p className="text-red-800 dark:text-red-200 text-sm font-medium">
+                              Type your email to confirm: <span className="font-mono">{profile.email}</span>
+                            </p>
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => setShowConfirmDialog(true)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Yes, delete my account
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Final Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-600">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              Final Confirmation
+            </DialogTitle>
+            <DialogDescription className="text-left space-y-3">
+              <p>You are about to permanently delete your account. We will send a confirmation email to:</p>
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                <p className="font-mono text-sm">{profile.email}</p>
+              </div>
+              <p className="text-red-600 dark:text-red-400 font-medium">
+                Click the link in the email to complete the deletion process.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmDialog(false)}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteAccount}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending Email...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Deletion Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Check Email Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-blue-600">
+              <Mail className="h-5 w-5 mr-2" />
+              Check Your Email
+            </DialogTitle>
+            <DialogDescription className="text-left space-y-3">
+              <p>We've sent a deletion confirmation email to:</p>
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+                <p className="font-mono text-sm text-blue-800 dark:text-blue-200">{profile.email}</p>
+              </div>
+              <p>Click the "Delete Account" button in the email to permanently delete your account.</p>
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
+                <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                  ⏰ The deletion link will expire in 24 hours for security.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              onClick={() => setShowDeleteDialog(false)}
+              className="w-full"
+            >
+              I understand
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
