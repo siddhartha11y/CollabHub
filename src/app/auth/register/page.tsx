@@ -36,7 +36,8 @@ export default function Register() {
     register,
     handleSubmit,
     formState: { errors },
-    setError
+    setError,
+    watch
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema)
   })
@@ -95,9 +96,32 @@ export default function Register() {
               We've sent a verification link to your email. Click the link to complete your registration and sign in.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Button 
               variant="outline" 
+              className="w-full"
+              onClick={async () => {
+                try {
+                  const response = await fetch("/api/auth/resend-verification", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: watch("email") })
+                  })
+                  if (response.ok) {
+                    alert("Verification email resent!")
+                  } else {
+                    alert("Failed to resend email")
+                  }
+                } catch (error) {
+                  alert("Error resending email")
+                }
+              }}
+              disabled={isLoading}
+            >
+              Resend verification email
+            </Button>
+            <Button 
+              variant="ghost" 
               className="w-full"
               onClick={() => setRegistrationSuccess(false)}
             >
