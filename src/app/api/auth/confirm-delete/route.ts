@@ -52,35 +52,44 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-failed?error=user-not-found", req.url))
     }
 
-    // Perform COMPLETE account deletion with CASCADE approach
+    // AGGRESSIVE DIRECT DELETION APPROACH
     try {
-      console.log(`🗑️ Starting COMPLETE deletion for user: ${user.email}`)
+      console.log(`🗑️ STARTING AGGRESSIVE DELETION for user: ${user.email} (ID: ${user.id})`)
       
-      // STEP 1: Delete in multiple smaller transactions to avoid timeout
-      // First, get all user-related IDs
-      const userWorkspaces = await prisma.workspace.findMany({
-        where: { creatorId: user.id },
-        select: { id: true, name: true }
-      })
-      
-      const userConversations = await prisma.conversation.findMany({
-        where: {
-          participants: {
-            some: { id: user.id }
-          }
-        },
-        select: { id: true }
-      })
-
-      console.log(`📊 Found: ${userWorkspaces.length} workspaces, ${userConversations.length} conversations`)
-
-      // STEP 2: Delete workspaces one by one (safer approach)
-      for (const workspace of userWorkspaces) {
-        try {
-          await prisma.$transaction(async (tx) => {
-            console.log(`🗑️ Deleting workspace: ${workspace.name}`)
-            
-            // Delete workspace data in correct order
+      // STEP 1: Use raw SQL to delete user with CASCADE
+      // This bypasses Prisma's transaction limitations
+      try {
+        console.log(`🔥 Attempting direct SQL deletion...`)
+        
+        // First, try to delete the user directly - let database handle cascades
+        const result = await prisma.$executeRaw`DELETE FROM "User" WHERE id = ${user.id}`
+        console.log(`✅ Direct SQL deletion result:`, result)
+        
+        if (result > 0) {
+          console.log(`🎉 USER SUCCESSFULLY DELETED via SQL: ${user.email}`)
+        } else {
+          throw new Error("SQL deletion returned 0 rows affected")
+        }
+        
+      } catch (sqlError) {
+        console.error(`❌ Direct SQL deletion failed:`, sqlError)
+        
+        // FALLBACK: Manual deletion with Prisma
+        console.log(`🔄 Falling back to manual Prisma deletion...`)
+        
+        await prisma.$transaction(async (tx) => {
+          console.log(`🧹 Manual cleanup for user: ${user.email}`)
+          
+          // Delete in specific order to avoid foreign key issues
+          
+          // 1. Delete all workspace-related data first
+          const workspaces = await tx.workspace.findMany({
+            where: { creatorId: user.id },
+            select: { id: true }
+          })
+          
+          for (const workspace of workspaces) {
+            // Delete workspace contents
             await tx.meetingActivity.deleteMany({ where: { workspaceId: workspace.id } })
             await tx.taskActivity.deleteMany({ where: { workspaceId: workspace.id } })
             await tx.notification.deleteMany({ where: { workspaceId: workspace.id } })
@@ -93,151 +102,79 @@ export async function GET(req: NextRequest) {
             await tx.task.deleteMany({ where: { workspaceId: workspace.id } })
             await tx.workspaceMember.deleteMany({ where: { workspaceId: workspace.id } })
             await tx.workspace.delete({ where: { id: workspace.id } })
-          }, { timeout: 30000 })
+          }
           
-          console.log(`✅ Deleted workspace: ${workspace.name}`)
-        } catch (workspaceError) {
-          console.error(`❌ Failed to delete workspace ${workspace.name}:`, workspaceError)
-          throw workspaceError
-        }
-      }
-
-      // STEP 3: Delete conversations one by one
-      for (const conversation of userConversations) {
-        try {
-          await prisma.$transaction(async (tx) => {
-            await tx.message.deleteMany({ where: { conversationId: conversation.id } })
-            await tx.call.deleteMany({ where: { conversationId: conversation.id } })
-            
-            // Disconnect user from conversation
+          // 2. Delete user's direct relationships
+          await tx.workspaceMember.deleteMany({ where: { userId: user.id } })
+          await tx.message.deleteMany({ where: { senderId: user.id } })
+          await tx.task.updateMany({ where: { assigneeId: user.id }, data: { assigneeId: null } })
+          await tx.task.deleteMany({ where: { creatorId: user.id } })
+          await tx.document.deleteMany({ where: { authorId: user.id } })
+          await tx.file.deleteMany({ where: { uploadedById: user.id } })
+          await tx.meeting.deleteMany({ where: { creatorId: user.id } })
+          await tx.notification.deleteMany({ where: { userId: user.id } })
+          await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
+          
+          // 3. Delete activity records
+          await tx.fileActivity.deleteMany({ 
+            where: { 
+              OR: [{ performedById: user.id }, { originalOwnerId: user.id }]
+            } 
+          })
+          await tx.documentActivity.deleteMany({ 
+            where: { 
+              OR: [{ performedById: user.id }, { originalAuthorId: user.id }]
+            } 
+          })
+          await tx.taskActivity.deleteMany({ where: { performedById: user.id } })
+          await tx.meetingActivity.deleteMany({ 
+            where: { 
+              OR: [{ performedById: user.id }, { originalCreatorId: user.id }]
+            } 
+          })
+          
+          // 4. Delete auth-related data
+          await tx.account.deleteMany({ where: { userId: user.id } })
+          await tx.session.deleteMany({ where: { userId: user.id } })
+          await tx.verificationToken.deleteMany({ 
+            where: { 
+              OR: [
+                { identifier: email },
+                { identifier: { contains: email } }
+              ]
+            } 
+          })
+          
+          // 5. Handle conversations (disconnect user)
+          const conversations = await tx.conversation.findMany({
+            where: { participants: { some: { id: user.id } } },
+            include: { participants: true }
+          })
+          
+          for (const conv of conversations) {
             await tx.conversation.update({
-              where: { id: conversation.id },
-              data: {
-                participants: {
-                  disconnect: { id: user.id }
-                }
-              }
+              where: { id: conv.id },
+              data: { participants: { disconnect: { id: user.id } } }
             })
             
-            // Check if conversation has other participants
-            const remainingParticipants = await tx.conversation.findUnique({
-              where: { id: conversation.id },
-              include: { participants: true }
-            })
-            
-            // If no other participants, delete the conversation
-            if (!remainingParticipants?.participants.length) {
-              await tx.conversation.delete({ where: { id: conversation.id } })
+            // If no other participants, delete conversation
+            if (conv.participants.length <= 1) {
+              await tx.message.deleteMany({ where: { conversationId: conv.id } })
+              await tx.call.deleteMany({ where: { conversationId: conv.id } })
+              await tx.conversation.delete({ where: { id: conv.id } })
             }
-          }, { timeout: 15000 })
-        } catch (conversationError) {
-          console.error(`❌ Failed to delete conversation ${conversation.id}:`, conversationError)
-          // Continue with other conversations
-        }
+          }
+          
+          // 6. FINALLY DELETE THE USER
+          console.log(`🗑️ DELETING USER RECORD: ${user.email}`)
+          const deletedUser = await tx.user.delete({ where: { id: user.id } })
+          console.log(`✅ USER DELETED via Prisma:`, deletedUser)
+          
+        }, { 
+          timeout: 120000, // 2 minutes timeout
+          maxWait: 20000   // 20 seconds max wait
+        })
       }
-
-      // STEP 4: Final user cleanup in one transaction
-      await prisma.$transaction(async (tx) => {
-        console.log(`🧹 Final cleanup for user: ${user.email}`)
-
-        // Delete remaining user data
-        const membershipCount = await tx.workspaceMember.count({ where: { userId: user.id } })
-        await tx.workspaceMember.deleteMany({ where: { userId: user.id } })
-        console.log(`👥 Removed from ${membershipCount} workspace memberships`)
-
-        // Delete individual messages (as sender)
-        const messageCount = await tx.message.count({ where: { senderId: user.id } })
-        await tx.message.deleteMany({ where: { senderId: user.id } })
-        console.log(`📝 Deleted ${messageCount} messages`)
-
-        // Handle tasks (remove as assignee, delete created tasks)
-        const assignedTasksCount = await tx.task.count({ where: { assigneeId: user.id } })
-        await tx.task.updateMany({
-          where: { assigneeId: user.id },
-          data: { assigneeId: null }
-        })
-        
-        const createdTasksCount = await tx.task.count({ where: { creatorId: user.id } })
-        await tx.task.deleteMany({ where: { creatorId: user.id } })
-        console.log(`📋 Handled ${createdTasksCount} created tasks and ${assignedTasksCount} assigned tasks`)
-
-        // Delete documents, files, meetings
-        const documentCount = await tx.document.count({ where: { authorId: user.id } })
-        await tx.document.deleteMany({ where: { authorId: user.id } })
-        
-        const fileCount = await tx.file.count({ where: { uploadedById: user.id } })
-        await tx.file.deleteMany({ where: { uploadedById: user.id } })
-        
-        const meetingCount = await tx.meeting.count({ where: { creatorId: user.id } })
-        await tx.meeting.deleteMany({ where: { creatorId: user.id } })
-        
-        console.log(`📄 Deleted ${documentCount} documents, ${fileCount} files, ${meetingCount} meetings`)
-
-        // Delete notifications and invitations
-        const notificationCount = await tx.notification.count({ where: { userId: user.id } })
-        await tx.notification.deleteMany({ where: { userId: user.id } })
-        
-        const invitationCount = await tx.workspaceInvitation.count({ where: { invitedById: user.id } })
-        await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
-        
-        console.log(`🔔 Deleted ${notificationCount} notifications, ${invitationCount} invitations`)
-
-        // Delete activity records
-        await tx.fileActivity.deleteMany({ 
-          where: { 
-            OR: [
-              { performedById: user.id },
-              { originalOwnerId: user.id }
-            ]
-          } 
-        })
-        
-        await tx.documentActivity.deleteMany({ 
-          where: { 
-            OR: [
-              { performedById: user.id },
-              { originalAuthorId: user.id }
-            ]
-          } 
-        })
-        
-        await tx.taskActivity.deleteMany({ where: { performedById: user.id } })
-        
-        await tx.meetingActivity.deleteMany({ 
-          where: { 
-            OR: [
-              { performedById: user.id },
-              { originalCreatorId: user.id }
-            ]
-          } 
-        })
-
-        // Delete OAuth accounts and sessions
-        const accountCount = await tx.account.count({ where: { userId: user.id } })
-        const sessionCount = await tx.session.count({ where: { userId: user.id } })
-        
-        await tx.account.deleteMany({ where: { userId: user.id } })
-        await tx.session.deleteMany({ where: { userId: user.id } })
-        console.log(`🔐 Deleted ${accountCount} OAuth accounts and ${sessionCount} sessions`)
-
-        // Delete verification tokens
-        await tx.verificationToken.deleteMany({ 
-          where: { 
-            OR: [
-              { identifier: email },
-              { identifier: { contains: email } },
-              { identifier: { startsWith: `delete:${email}` } },
-              { identifier: { startsWith: `login:${email}` } }
-            ]
-          } 
-        })
-
-        // FINALLY DELETE THE USER RECORD
-        console.log(`🗑️ DELETING USER RECORD: ${user.email}`)
-        await tx.user.delete({ where: { id: user.id } })
-        console.log(`✅ USER DELETED: ${user.email}`)
-        
-      }, { timeout: 30000 })
 
       // 15. VERIFICATION: Double-check that user is completely removed
       console.log(`🔍 Verifying deletion for ${email}...`)
@@ -373,20 +310,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-success", req.url))
 
     } catch (deletionError) {
-      console.error("❌ Account deletion error:", deletionError)
+      console.error("❌ ALL DELETION METHODS FAILED:", deletionError)
       
-      // FALLBACK: Try force deletion with raw SQL if transaction fails
+      // LAST RESORT: Mark user as deleted instead of actual deletion
       try {
-        console.log("🔄 Attempting force deletion with raw SQL...")
+        console.log("🚨 LAST RESORT: Marking user as deleted...")
         
-        // Use raw SQL to delete user and cascade
-        await prisma.$executeRaw`
-          DELETE FROM "User" WHERE id = ${user.id}
-        `
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            email: `DELETED_${Date.now()}_${user.email}`,
+            name: "DELETED_USER",
+            emailVerified: null,
+            password: null,
+            image: null,
+            bio: null,
+            title: null,
+            company: null,
+            location: null,
+            website: null,
+            phone: null
+          }
+        })
         
-        console.log("✅ Force deletion successful")
-      } catch (forceError) {
-        console.error("❌ Force deletion also failed:", forceError)
+        console.log("⚠️ User marked as deleted (not fully removed)")
+      } catch (markError) {
+        console.error("❌ Even marking as deleted failed:", markError)
         return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
       }
     }
