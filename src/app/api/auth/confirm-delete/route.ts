@@ -52,129 +52,137 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-failed?error=user-not-found", req.url))
     }
 
-    // Perform COMPLETE account deletion in a transaction
+    // Perform COMPLETE account deletion with CASCADE approach
     try {
-      await prisma.$transaction(async (tx) => {
-        console.log(`🗑️ Starting complete deletion for user: ${user.email}`)
+      console.log(`🗑️ Starting COMPLETE deletion for user: ${user.email}`)
+      
+      // STEP 1: Delete in multiple smaller transactions to avoid timeout
+      // First, get all user-related IDs
+      const userWorkspaces = await prisma.workspace.findMany({
+        where: { creatorId: user.id },
+        select: { id: true, name: true }
+      })
+      
+      const userConversations = await prisma.conversation.findMany({
+        where: {
+          participants: {
+            some: { id: user.id }
+          }
+        },
+        select: { id: true }
+      })
 
-        // 1. DELETE USER'S WORKSPACES AND ALL RELATED DATA
-        const userWorkspaces = await tx.workspace.findMany({
-          where: { creatorId: user.id },
-          select: { id: true, name: true }
-        })
+      console.log(`📊 Found: ${userWorkspaces.length} workspaces, ${userConversations.length} conversations`)
 
-        console.log(`📁 Deleting ${userWorkspaces.length} workspaces...`)
-        for (const workspace of userWorkspaces) {
-          // Delete all workspace-related data in correct order (foreign key constraints)
-          await tx.meetingActivity.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.taskActivity.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.notification.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.documentActivity.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.fileActivity.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.workspaceInvitation.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.file.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.meeting.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.document.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.task.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.workspaceMember.deleteMany({ where: { workspaceId: workspace.id } })
-          await tx.workspace.delete({ where: { id: workspace.id } })
+      // STEP 2: Delete workspaces one by one (safer approach)
+      for (const workspace of userWorkspaces) {
+        try {
+          await prisma.$transaction(async (tx) => {
+            console.log(`🗑️ Deleting workspace: ${workspace.name}`)
+            
+            // Delete workspace data in correct order
+            await tx.meetingActivity.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.taskActivity.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.notification.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.documentActivity.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.fileActivity.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.workspaceInvitation.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.file.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.meeting.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.document.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.task.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.workspaceMember.deleteMany({ where: { workspaceId: workspace.id } })
+            await tx.workspace.delete({ where: { id: workspace.id } })
+          }, { timeout: 30000 })
+          
           console.log(`✅ Deleted workspace: ${workspace.name}`)
+        } catch (workspaceError) {
+          console.error(`❌ Failed to delete workspace ${workspace.name}:`, workspaceError)
+          throw workspaceError
         }
+      }
 
-        // 2. DELETE USER'S WORKSPACE MEMBERSHIPS (workspaces they joined but didn't create)
+      // STEP 3: Delete conversations one by one
+      for (const conversation of userConversations) {
+        try {
+          await prisma.$transaction(async (tx) => {
+            await tx.message.deleteMany({ where: { conversationId: conversation.id } })
+            await tx.call.deleteMany({ where: { conversationId: conversation.id } })
+            
+            // Disconnect user from conversation
+            await tx.conversation.update({
+              where: { id: conversation.id },
+              data: {
+                participants: {
+                  disconnect: { id: user.id }
+                }
+              }
+            })
+            
+            // Check if conversation has other participants
+            const remainingParticipants = await tx.conversation.findUnique({
+              where: { id: conversation.id },
+              include: { participants: true }
+            })
+            
+            // If no other participants, delete the conversation
+            if (!remainingParticipants?.participants.length) {
+              await tx.conversation.delete({ where: { id: conversation.id } })
+            }
+          }, { timeout: 15000 })
+        } catch (conversationError) {
+          console.error(`❌ Failed to delete conversation ${conversation.id}:`, conversationError)
+          // Continue with other conversations
+        }
+      }
+
+      // STEP 4: Final user cleanup in one transaction
+      await prisma.$transaction(async (tx) => {
+        console.log(`🧹 Final cleanup for user: ${user.email}`)
+
+        // Delete remaining user data
         const membershipCount = await tx.workspaceMember.count({ where: { userId: user.id } })
         await tx.workspaceMember.deleteMany({ where: { userId: user.id } })
         console.log(`👥 Removed from ${membershipCount} workspace memberships`)
 
-        // 3. DELETE USER'S CONVERSATIONS AND MESSAGES
-        const userConversations = await tx.conversation.findMany({
-          where: {
-            participants: {
-              some: { id: user.id }
-            }
-          },
-          select: { id: true }
-        })
-
-        console.log(`💬 Deleting ${userConversations.length} conversations...`)
-        for (const conversation of userConversations) {
-          await tx.message.deleteMany({ where: { conversationId: conversation.id } })
-          await tx.call.deleteMany({ where: { conversationId: conversation.id } })
-          // Disconnect user from conversation first, then delete if no other participants
-          await tx.conversation.update({
-            where: { id: conversation.id },
-            data: {
-              participants: {
-                disconnect: { id: user.id }
-              }
-            }
-          })
-          
-          // Check if conversation has other participants
-          const remainingParticipants = await tx.conversation.findUnique({
-            where: { id: conversation.id },
-            include: { participants: true }
-          })
-          
-          // If no other participants, delete the conversation
-          if (!remainingParticipants?.participants.length) {
-            await tx.conversation.delete({ where: { id: conversation.id } })
-          }
-        }
-
-        // 4. DELETE USER'S INDIVIDUAL MESSAGES (as sender)
+        // Delete individual messages (as sender)
         const messageCount = await tx.message.count({ where: { senderId: user.id } })
         await tx.message.deleteMany({ where: { senderId: user.id } })
         console.log(`📝 Deleted ${messageCount} messages`)
 
-        // 5. DELETE USER'S TASKS (created and assigned)
-        const createdTasksCount = await tx.task.count({ where: { creatorId: user.id } })
+        // Handle tasks (remove as assignee, delete created tasks)
         const assignedTasksCount = await tx.task.count({ where: { assigneeId: user.id } })
-        
-        // Remove user as assignee from tasks
         await tx.task.updateMany({
           where: { assigneeId: user.id },
           data: { assigneeId: null }
         })
         
-        // Delete tasks created by user (if they still exist after workspace deletion)
+        const createdTasksCount = await tx.task.count({ where: { creatorId: user.id } })
         await tx.task.deleteMany({ where: { creatorId: user.id } })
         console.log(`📋 Handled ${createdTasksCount} created tasks and ${assignedTasksCount} assigned tasks`)
 
-        // 6. DELETE USER'S DOCUMENTS
+        // Delete documents, files, meetings
         const documentCount = await tx.document.count({ where: { authorId: user.id } })
         await tx.document.deleteMany({ where: { authorId: user.id } })
-        console.log(`📄 Deleted ${documentCount} documents`)
-
-        // 7. DELETE USER'S FILES
+        
         const fileCount = await tx.file.count({ where: { uploadedById: user.id } })
         await tx.file.deleteMany({ where: { uploadedById: user.id } })
-        console.log(`📎 Deleted ${fileCount} files`)
-
-        // 8. DELETE USER'S MEETINGS
+        
         const meetingCount = await tx.meeting.count({ where: { creatorId: user.id } })
         await tx.meeting.deleteMany({ where: { creatorId: user.id } })
-        console.log(`🎥 Deleted ${meetingCount} meetings`)
+        
+        console.log(`📄 Deleted ${documentCount} documents, ${fileCount} files, ${meetingCount} meetings`)
 
-        // 9. DELETE USER'S NOTIFICATIONS
+        // Delete notifications and invitations
         const notificationCount = await tx.notification.count({ where: { userId: user.id } })
         await tx.notification.deleteMany({ where: { userId: user.id } })
-        console.log(`🔔 Deleted ${notificationCount} notifications`)
-
-        // 10. DELETE USER'S INVITATIONS (sent by user)
+        
         const invitationCount = await tx.workspaceInvitation.count({ where: { invitedById: user.id } })
         await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
-        console.log(`📧 Deleted ${invitationCount} workspace invitations`)
+        
+        console.log(`🔔 Deleted ${notificationCount} notifications, ${invitationCount} invitations`)
 
-        // 11. DELETE USER'S ACTIVITY RECORDS
-        const fileActivityCount = await tx.fileActivity.count({ 
-          where: { 
-            OR: [
-              { performedById: user.id },
-              { originalOwnerId: user.id }
-            ]
-          } 
-        })
+        // Delete activity records
         await tx.fileActivity.deleteMany({ 
           where: { 
             OR: [
@@ -183,15 +191,7 @@ export async function GET(req: NextRequest) {
             ]
           } 
         })
-
-        const docActivityCount = await tx.documentActivity.count({ 
-          where: { 
-            OR: [
-              { performedById: user.id },
-              { originalAuthorId: user.id }
-            ]
-          } 
-        })
+        
         await tx.documentActivity.deleteMany({ 
           where: { 
             OR: [
@@ -200,18 +200,9 @@ export async function GET(req: NextRequest) {
             ]
           } 
         })
-
-        const taskActivityCount = await tx.taskActivity.count({ where: { performedById: user.id } })
+        
         await tx.taskActivity.deleteMany({ where: { performedById: user.id } })
-
-        const meetingActivityCount = await tx.meetingActivity.count({ 
-          where: { 
-            OR: [
-              { performedById: user.id },
-              { originalCreatorId: user.id }
-            ]
-          } 
-        })
+        
         await tx.meetingActivity.deleteMany({ 
           where: { 
             OR: [
@@ -221,9 +212,7 @@ export async function GET(req: NextRequest) {
           } 
         })
 
-        console.log(`📊 Deleted activity records: ${fileActivityCount} file, ${docActivityCount} document, ${taskActivityCount} task, ${meetingActivityCount} meeting`)
-
-        // 12. DELETE USER'S OAUTH ACCOUNTS AND SESSIONS
+        // Delete OAuth accounts and sessions
         const accountCount = await tx.account.count({ where: { userId: user.id } })
         const sessionCount = await tx.session.count({ where: { userId: user.id } })
         
@@ -231,17 +220,7 @@ export async function GET(req: NextRequest) {
         await tx.session.deleteMany({ where: { userId: user.id } })
         console.log(`🔐 Deleted ${accountCount} OAuth accounts and ${sessionCount} sessions`)
 
-        // 13. DELETE ALL VERIFICATION TOKENS RELATED TO USER
-        const tokenCount = await tx.verificationToken.count({ 
-          where: { 
-            OR: [
-              { identifier: email },
-              { identifier: { contains: email } },
-              { identifier: { startsWith: `delete:${email}` } },
-              { identifier: { startsWith: `login:${email}` } }
-            ]
-          } 
-        })
+        // Delete verification tokens
         await tx.verificationToken.deleteMany({ 
           where: { 
             OR: [
@@ -252,19 +231,13 @@ export async function GET(req: NextRequest) {
             ]
           } 
         })
-        console.log(`🎫 Deleted ${tokenCount} verification tokens`)
 
-        // 14. FINALLY DELETE THE USER RECORD
-        console.log(`🗑️ About to delete user record for: ${user.email}`)
-        const deletedUser = await tx.user.delete({ where: { id: user.id } })
-        console.log(`👤 DELETED USER ACCOUNT: ${user.email}`, deletedUser)
-
-        console.log(`✅ COMPLETE DELETION SUCCESSFUL for ${user.email}`)
-      }, {
-        timeout: 60000, // 60 second timeout for large deletions
-        maxWait: 10000, // Max wait time for transaction to start
-        isolationLevel: 'Serializable' // Ensure complete isolation
-      })
+        // FINALLY DELETE THE USER RECORD
+        console.log(`🗑️ DELETING USER RECORD: ${user.email}`)
+        await tx.user.delete({ where: { id: user.id } })
+        console.log(`✅ USER DELETED: ${user.email}`)
+        
+      }, { timeout: 30000 })
 
       // 15. VERIFICATION: Double-check that user is completely removed
       console.log(`🔍 Verifying deletion for ${email}...`)
@@ -400,8 +373,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-success", req.url))
 
     } catch (deletionError) {
-      console.error("Account deletion error:", deletionError)
-      return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
+      console.error("❌ Account deletion error:", deletionError)
+      
+      // FALLBACK: Try force deletion with raw SQL if transaction fails
+      try {
+        console.log("🔄 Attempting force deletion with raw SQL...")
+        
+        // Use raw SQL to delete user and cascade
+        await prisma.$executeRaw`
+          DELETE FROM "User" WHERE id = ${user.id}
+        `
+        
+        console.log("✅ Force deletion successful")
+      } catch (forceError) {
+        console.error("❌ Force deletion also failed:", forceError)
+        return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
+      }
     }
 
   } catch (error) {

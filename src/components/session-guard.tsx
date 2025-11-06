@@ -78,7 +78,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
       
       {/* Account Deleted Dialog */}
       <Dialog open={showDeletedDialog} onOpenChange={() => {}}>
-        <DialogContent className="max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-md [&>button]:hidden" onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center text-red-600">
               <UserX className="h-5 w-5 mr-2" />
