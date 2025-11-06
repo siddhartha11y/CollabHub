@@ -44,8 +44,9 @@ export const authOptions: NextAuthOptions = {
           }
         })
 
+        // BETTER ERROR HANDLING: Different messages for different scenarios
         if (!user) {
-          return null
+          throw new Error("No account found with this email address. Please register first or check your email.")
         }
 
         // STRICT EMAIL VERIFICATION CHECK
@@ -65,7 +66,7 @@ export const authOptions: NextAuthOptions = {
 
         // Handle regular password login
         if (!credentials.password || !user.password) {
-          return null
+          throw new Error("Password is required for this account.")
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -74,7 +75,7 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!isPasswordValid) {
-          return null
+          throw new Error("Invalid password. Please check your password and try again.")
         }
 
         return {
@@ -98,7 +99,15 @@ export const authOptions: NextAuthOptions = {
       try {
         if (!user.email) return false
 
-        // Check if user exists
+        // ONLY auto-create users for OAuth providers (Google, etc.)
+        // DO NOT auto-create for credentials provider
+        if (account?.provider === "credentials") {
+          // For credentials login, user MUST already exist
+          // This is handled in the credentials authorize function
+          return true
+        }
+
+        // Check if user exists (for OAuth providers only)
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
         })
@@ -107,14 +116,14 @@ export const authOptions: NextAuthOptions = {
           // Generate username from email
           const username = await generateUsernameFromEmail(user.email)
           
-          // Create new user - ONLY for new users, use Google data
+          // Create new user - ONLY for OAuth providers (Google, etc.)
           await prisma.user.create({
             data: {
               email: user.email,
               name: user.name || "",
               username: username,
               image: user.image || null,
-              emailVerified: new Date(),
+              emailVerified: new Date(), // OAuth users are auto-verified
             },
           })
         } else {

@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import crypto from "crypto"
-import { sendFastEmail } from "@/lib/email-optimizer"
+import { sendFastEmail, initializeEmailSystem } from "@/lib/email-optimizer"
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -13,6 +13,9 @@ const registerSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Ensure email system is initialized
+    initializeEmailSystem()
+    
     const body = await req.json()
     const { name, email, password } = registerSchema.parse(body)
 

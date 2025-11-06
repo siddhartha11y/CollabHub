@@ -128,3 +128,11 @@ export function initializeEmailSystem() {
     }
   }, 240000) // Every 4 minutes
 }
+
+// Auto-initialize on module load (for serverless)
+if (typeof window === 'undefined') {
+  // Only run on server side
+  setTimeout(() => {
+    initializeEmailSystem()
+  }, 100)
+}
