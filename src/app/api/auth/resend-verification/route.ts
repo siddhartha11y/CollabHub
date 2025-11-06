@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import nodemailer from "nodemailer"
+import { sendFastEmail } from "@/lib/email-optimizer"
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,45 +45,22 @@ export async function POST(req: NextRequest) {
 
     const verificationUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${verificationToken.token}`
 
-    // Create optimized transporter
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: Number(process.env.EMAIL_SERVER_PORT),
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-      pool: true,
-      maxConnections: 5,
-      rateLimit: 14,
-      connectionTimeout: 10000,
-    })
-
-    // Send email with timeout
-    const emailPromise = transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: email,
-      subject: "Verify your email - CollabHub (Resent)",
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Verify Email</title></head><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px"><h2 style="color:#3b82f6">Verify Your Email</h2><p>Hi ${name},</p><p>Here's your verification link (resent):</p><div style="text-align:center;margin:30px 0"><a href="${verificationUrl}" style="background-color:#3b82f6;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block">Verify Email Address</a></div><p>Link expires in 24 hours.</p><p style="color:#666;font-size:14px">CollabHub Team</p></body></html>`,
-      headers: {
-        'X-Priority': '1',
-        'X-MSMail-Priority': 'High',
-        'Importance': 'high'
-      }
-    })
-
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Email timeout')), 15000)
-    })
-
+    // ULTRA-FAST EMAIL using optimized system
     try {
-      await Promise.race([emailPromise, timeoutPromise])
+      await sendFastEmail({
+        to: email,
+        subject: "🔄 VERIFY EMAIL (RESENT) - CollabHub",
+        name: name,
+        buttonText: "✅ VERIFY EMAIL",
+        buttonUrl: verificationUrl,
+        description: "Click to verify your account:"
+      })
+      
       return NextResponse.json({
         message: "Verification email resent successfully!"
       })
     } catch (emailError) {
-      console.error("Resend email error:", emailError)
+      console.error("❌ Resend email error:", emailError)
       return NextResponse.json(
         { error: "Failed to resend email. Please try again later." },
         { status: 500 }

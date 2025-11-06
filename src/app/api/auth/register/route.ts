@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import crypto from "crypto"
-import nodemailer from "nodemailer"
+import { sendFastEmail } from "@/lib/email-optimizer"
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -61,59 +61,25 @@ export async function POST(req: NextRequest) {
     console.log("Generated verification token:", verificationToken)
     console.log("Token expiry:", tokenExpiry)
 
-    // OPTIMIZED: Create transporter with connection pooling and faster settings
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: Number(process.env.EMAIL_SERVER_PORT),
-      secure: false, // Use STARTTLS
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-      // Performance optimizations
-      pool: true, // Use connection pooling
-      maxConnections: 5, // Limit concurrent connections
-      maxMessages: 100, // Messages per connection
-      rateLimit: 14, // Max 14 messages per second (Gmail limit)
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 5000, // 5 seconds
-      socketTimeout: 30000, // 30 seconds
-    })
-
-    // Skip verification to save time (we'll handle errors in sendMail)
-    // Remove the verify() call as it adds unnecessary delay
-
     const verificationUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${verificationToken}`
 
-    // OPTIMIZED: Send email with timeout and simplified HTML
-    const emailPromise = transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: email,
-      subject: "Verify your email - CollabHub",
-      // Simplified HTML for faster processing
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Verify Email</title></head><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px"><h2 style="color:#3b82f6">Welcome to CollabHub!</h2><p>Hi ${name},</p><p>Click the button below to verify your email and complete registration:</p><div style="text-align:center;margin:30px 0"><a href="${verificationUrl}" style="background-color:#3b82f6;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block">Verify Email Address</a></div><p>Link expires in 24 hours.</p><p style="color:#666;font-size:14px">Best regards,<br>CollabHub Team</p></body></html>`,
-      // Add priority headers for faster delivery
-      headers: {
-        'X-Priority': '1',
-        'X-MSMail-Priority': 'High',
-        'Importance': 'high'
-      }
-    })
-
-    // Set a timeout for email sending (max 15 seconds)
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Email timeout')), 15000)
-    })
-
+    // ULTRA-FAST EMAIL using optimized system
     try {
-      await Promise.race([emailPromise, timeoutPromise])
-      console.log("Email sent successfully")
+      await sendFastEmail({
+        to: email,
+        subject: "✅ VERIFY EMAIL - CollabHub",
+        name: name,
+        buttonText: "✅ VERIFY EMAIL",
+        buttonUrl: verificationUrl,
+        description: "Click to verify and activate your account:"
+      })
+      console.log("✅ Verification email sent successfully")
     } catch (emailError) {
-      console.error("Email sending error:", emailError)
+      console.error("❌ Email sending error:", emailError)
       
       // Don't fail registration if email fails - store token anyway
       // User can request resend later
-      console.log("Continuing registration despite email error...")
+      console.log("⚠️ Continuing registration despite email error...")
     }
 
     // THIRD: Only create verification token AFTER email is successfully sent
