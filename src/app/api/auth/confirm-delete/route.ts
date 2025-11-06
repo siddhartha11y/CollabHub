@@ -255,25 +255,33 @@ export async function GET(req: NextRequest) {
         console.log(`🎫 Deleted ${tokenCount} verification tokens`)
 
         // 14. FINALLY DELETE THE USER RECORD
-        await tx.user.delete({ where: { id: user.id } })
-        console.log(`👤 DELETED USER ACCOUNT: ${user.email}`)
+        console.log(`🗑️ About to delete user record for: ${user.email}`)
+        const deletedUser = await tx.user.delete({ where: { id: user.id } })
+        console.log(`👤 DELETED USER ACCOUNT: ${user.email}`, deletedUser)
 
         console.log(`✅ COMPLETE DELETION SUCCESSFUL for ${user.email}`)
       }, {
-        timeout: 60000 // 60 second timeout for large deletions
+        timeout: 60000, // 60 second timeout for large deletions
+        maxWait: 10000, // Max wait time for transaction to start
+        isolationLevel: 'Serializable' // Ensure complete isolation
       })
 
       // 15. VERIFICATION: Double-check that user is completely removed
+      console.log(`🔍 Verifying deletion for ${email}...`)
       const verifyDeletion = await prisma.user.findUnique({
         where: { email }
       })
       
       if (verifyDeletion) {
+        console.error(`❌ DELETION VERIFICATION FAILED: User still exists`, verifyDeletion)
         throw new Error("User deletion verification failed - user still exists")
       }
       
-      console.log(`🔍 VERIFICATION PASSED: User ${email} completely removed from database`)
+      console.log(`✅ VERIFICATION PASSED: User ${email} completely removed from database`)
 
+      // 16. INVALIDATE ALL SESSIONS FOR THIS USER (force logout)
+      // This will be handled by the client-side session check
+      
       // Send account deletion confirmation email
       try {
         const transporter = nodemailer.createTransport({

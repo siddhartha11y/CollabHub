@@ -14,6 +14,7 @@ import { TestNotificationButton } from "@/components/test-notification-button"
 import { UserSearch } from "@/components/user-search"
 import { MessageNotificationBadge } from "@/components/message-notification-badge"
 import { useUserImage } from "@/hooks/use-user-image"
+import { SessionGuard } from "@/components/session-guard"
 
 // Component to show user profile with image
 function UserProfileLink({ userId, userName }: { userId?: string, userName?: string | null }) {
@@ -74,7 +75,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <SessionGuard>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-[100]">
         <div className="container mx-auto px-4 py-4">
@@ -224,6 +226,7 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </SessionGuard>
   )
 }
