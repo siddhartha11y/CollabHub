@@ -52,188 +52,38 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-failed?error=user-not-found", req.url))
     }
 
-    // BULLETPROOF DELETION - EXACTLY LIKE FORCE DELETE API
-    console.log(`🔥 STARTING BULLETPROOF DELETION: ${user.email} (ID: ${user.id})`)
+    // SIMPLE DIRECT DELETION
+    console.log(`🔥 DELETING USER: ${user.email} (ID: ${user.id})`)
 
-    let deletionSuccessful = false
-    let deletionMethod = ""
-
-    // Method 1: Direct SQL deletion
     try {
-      console.log(`🗑️ Method 1: Direct SQL deletion`)
-      const result = await prisma.$executeRaw`DELETE FROM "User" WHERE id = ${user.id}`
-      console.log(`SQL deletion result:`, result)
+      // Use raw SQL to force delete - bypasses all Prisma constraints
+      await prisma.$executeRaw`
+        DELETE FROM "Account" WHERE "userId" = ${user.id};
+        DELETE FROM "Session" WHERE "userId" = ${user.id};
+        DELETE FROM "WorkspaceMember" WHERE "userId" = ${user.id};
+        DELETE FROM "Message" WHERE "senderId" = ${user.id};
+        DELETE FROM "Notification" WHERE "userId" = ${user.id};
+        DELETE FROM "WorkspaceInvitation" WHERE "invitedById" = ${user.id};
+        UPDATE "Task" SET "assigneeId" = NULL WHERE "assigneeId" = ${user.id};
+        DELETE FROM "Task" WHERE "creatorId" = ${user.id};
+        DELETE FROM "Document" WHERE "authorId" = ${user.id};
+        DELETE FROM "File" WHERE "uploadedById" = ${user.id};
+        DELETE FROM "Meeting" WHERE "creatorId" = ${user.id};
+        DELETE FROM "FileActivity" WHERE "performedById" = ${user.id} OR "originalOwnerId" = ${user.id};
+        DELETE FROM "DocumentActivity" WHERE "performedById" = ${user.id} OR "originalAuthorId" = ${user.id};
+        DELETE FROM "TaskActivity" WHERE "performedById" = ${user.id};
+        DELETE FROM "MeetingActivity" WHERE "performedById" = ${user.id} OR "originalCreatorId" = ${user.id};
+        DELETE FROM "_ConversationParticipants" WHERE "A" = ${user.id} OR "B" = ${user.id};
+        DELETE FROM "_CallParticipants" WHERE "A" = ${user.id} OR "B" = ${user.id};
+        DELETE FROM "VerificationToken" WHERE "identifier" = ${`delete:${email}`};
+        DELETE FROM "User" WHERE "id" = ${user.id};
+      `
       
-      if (result > 0) {
-        deletionSuccessful = true
-        deletionMethod = "SQL"
-        console.log(`✅ SUCCESS: User deleted via SQL`)
-        
-        // Clean up the deletion token immediately after successful deletion
-        await prisma.verificationToken.delete({ where: { token } })
-        
-      } else {
-        throw new Error("SQL returned 0 rows")
-      }
-    } catch (sqlError) {
-      console.error(`❌ Method 1 failed:`, sqlError)
+      console.log(`✅ USER COMPLETELY DELETED`)
       
-      // Method 2: Manual Prisma cleanup
-      try {
-        console.log(`🔄 Method 2: Manual Prisma cleanup`)
-        
-        await prisma.$transaction(async (tx) => {
-          console.log(`Deleting user relationships...`)
-          
-          // Delete in specific order
-          await tx.account.deleteMany({ where: { userId: user.id } })
-          await tx.session.deleteMany({ where: { userId: user.id } })
-          await tx.workspaceMember.deleteMany({ where: { userId: user.id } })
-          await tx.message.deleteMany({ where: { senderId: user.id } })
-          await tx.notification.deleteMany({ where: { userId: user.id } })
-          await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
-          
-          // Handle tasks
-          await tx.task.updateMany({
-            where: { assigneeId: user.id },
-            data: { assigneeId: null }
-          })
-          await tx.task.deleteMany({ where: { creatorId: user.id } })
-          
-          // Delete content
-          await tx.document.deleteMany({ where: { authorId: user.id } })
-          await tx.file.deleteMany({ where: { uploadedById: user.id } })
-          await tx.meeting.deleteMany({ where: { creatorId: user.id } })
-          
-          // Delete activities
-          await tx.fileActivity.deleteMany({ 
-            where: { 
-              OR: [{ performedById: user.id }, { originalOwnerId: user.id }]
-            } 
-          })
-          await tx.documentActivity.deleteMany({ 
-            where: { 
-              OR: [{ performedById: user.id }, { originalAuthorId: user.id }]
-            } 
-          })
-          await tx.taskActivity.deleteMany({ where: { performedById: user.id } })
-          await tx.meetingActivity.deleteMany({ 
-            where: { 
-              OR: [{ performedById: user.id }, { originalCreatorId: user.id }]
-            } 
-          })
-          
-          // Delete tokens
-          await tx.verificationToken.deleteMany({
-            where: {
-              OR: [
-                { identifier: email },
-                { identifier: { contains: email } }
-              ]
-            }
-          })
-          
-          // Handle conversations
-          const conversations = await tx.conversation.findMany({
-            where: { participants: { some: { id: user.id } } },
-            include: { participants: true }
-          })
-          
-          for (const conv of conversations) {
-            await tx.conversation.update({
-              where: { id: conv.id },
-              data: { participants: { disconnect: { id: user.id } } }
-            })
-            
-            if (conv.participants.length <= 1) {
-              await tx.message.deleteMany({ where: { conversationId: conv.id } })
-              await tx.call.deleteMany({ where: { conversationId: conv.id } })
-              await tx.conversation.delete({ where: { id: conv.id } })
-            }
-          }
-          
-          // CRITICAL: Delete the user last
-          console.log(`🗑️ DELETING USER RECORD...`)
-          await tx.user.delete({ where: { id: user.id } })
-          console.log(`✅ USER RECORD DELETED`)
-          
-        }, { timeout: 120000 })
-        
-        deletionSuccessful = true
-        deletionMethod = "MANUAL"
-        console.log(`✅ SUCCESS: User deleted via manual cleanup`)
-        
-        // Clean up the deletion token after successful manual deletion
-        try {
-          await prisma.verificationToken.delete({ where: { token } })
-        } catch (tokenError) {
-          console.log(`Token already deleted or not found`)
-        }
-        
-      } catch (manualError) {
-        console.error(`❌ Method 2 failed:`, manualError)
-        
-        // Method 3: Force anonymization (last resort)
-        try {
-          console.log(`🚨 Method 3: Force anonymization`)
-          
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              email: `DELETED_${Date.now()}_${user.email}`,
-              name: "DELETED_USER",
-              emailVerified: null,
-              password: null,
-              image: null,
-              bio: null,
-              title: null,
-              company: null,
-              location: null,
-              website: null,
-              phone: null
-            }
-          })
-          
-          deletionSuccessful = true
-          deletionMethod = "ANONYMIZED"
-          console.log(`⚠️ SUCCESS: User anonymized (not fully deleted)`)
-          
-          // Clean up the deletion token after anonymization
-          try {
-            await prisma.verificationToken.delete({ where: { token } })
-          } catch (tokenError) {
-            console.log(`Token already deleted or not found`)
-          }
-          
-        } catch (anonymizeError) {
-          console.error(`❌ Method 3 failed:`, anonymizeError)
-          deletionSuccessful = false
-        }
-      }
-    }
-
-    // Check if deletion was successful
-    if (!deletionSuccessful) {
-      console.error(`❌ ALL DELETION METHODS FAILED`)
+    } catch (error) {
+      console.error(`❌ DELETION FAILED:`, error)
       return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
-    }
-
-    console.log(`🎉 DELETION COMPLETED via ${deletionMethod}`)
-
-    // Only verify deletion for non-anonymized users
-    if (deletionMethod !== "ANONYMIZED") {
-      try {
-        const checkUser = await prisma.user.findUnique({ where: { email } })
-        if (checkUser) {
-          console.error(`❌ VERIFICATION FAILED: User still exists after deletion`)
-          return NextResponse.redirect(new URL("/auth/delete-failed?error=verification-failed", req.url))
-        }
-        console.log(`✅ VERIFICATION PASSED: User properly deleted`)
-      } catch (verifyError) {
-        console.log(`✅ VERIFICATION PASSED: User not found (deleted successfully)`)
-      }
-    } else {
-      console.log(`⚠️ SKIPPING VERIFICATION: User was anonymized, not deleted`)
     }
       
       // Send account deletion confirmation email
