@@ -56,28 +56,26 @@ export async function GET(req: NextRequest) {
     console.log(`🔥 DELETING USER: ${user.email} (ID: ${user.id})`)
 
     try {
-      // Use raw SQL to force delete - bypasses all Prisma constraints
-      await prisma.$executeRaw`
-        DELETE FROM "Account" WHERE "userId" = ${user.id};
-        DELETE FROM "Session" WHERE "userId" = ${user.id};
-        DELETE FROM "WorkspaceMember" WHERE "userId" = ${user.id};
-        DELETE FROM "Message" WHERE "senderId" = ${user.id};
-        DELETE FROM "Notification" WHERE "userId" = ${user.id};
-        DELETE FROM "WorkspaceInvitation" WHERE "invitedById" = ${user.id};
-        UPDATE "Task" SET "assigneeId" = NULL WHERE "assigneeId" = ${user.id};
-        DELETE FROM "Task" WHERE "creatorId" = ${user.id};
-        DELETE FROM "Document" WHERE "authorId" = ${user.id};
-        DELETE FROM "File" WHERE "uploadedById" = ${user.id};
-        DELETE FROM "Meeting" WHERE "creatorId" = ${user.id};
-        DELETE FROM "FileActivity" WHERE "performedById" = ${user.id} OR "originalOwnerId" = ${user.id};
-        DELETE FROM "DocumentActivity" WHERE "performedById" = ${user.id} OR "originalAuthorId" = ${user.id};
-        DELETE FROM "TaskActivity" WHERE "performedById" = ${user.id};
-        DELETE FROM "MeetingActivity" WHERE "performedById" = ${user.id} OR "originalCreatorId" = ${user.id};
-        DELETE FROM "_ConversationParticipants" WHERE "A" = ${user.id} OR "B" = ${user.id};
-        DELETE FROM "_CallParticipants" WHERE "A" = ${user.id} OR "B" = ${user.id};
-        DELETE FROM "VerificationToken" WHERE "identifier" = ${`delete:${email}`};
-        DELETE FROM "User" WHERE "id" = ${user.id};
-      `
+      // Execute each deletion separately to avoid PostgreSQL multi-command error
+      await prisma.$executeRaw`DELETE FROM "Account" WHERE "userId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "Session" WHERE "userId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "WorkspaceMember" WHERE "userId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "Message" WHERE "senderId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "Notification" WHERE "userId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "WorkspaceInvitation" WHERE "invitedById" = ${user.id}`
+      await prisma.$executeRaw`UPDATE "Task" SET "assigneeId" = NULL WHERE "assigneeId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "Task" WHERE "creatorId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "Document" WHERE "authorId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "File" WHERE "uploadedById" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "Meeting" WHERE "creatorId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "FileActivity" WHERE "performedById" = ${user.id} OR "originalOwnerId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "DocumentActivity" WHERE "performedById" = ${user.id} OR "originalAuthorId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "TaskActivity" WHERE "performedById" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "MeetingActivity" WHERE "performedById" = ${user.id} OR "originalCreatorId" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "_ConversationParticipants" WHERE "A" = ${user.id} OR "B" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "_CallParticipants" WHERE "A" = ${user.id} OR "B" = ${user.id}`
+      await prisma.$executeRaw`DELETE FROM "VerificationToken" WHERE "identifier" = ${`delete:${email}`}`
+      await prisma.$executeRaw`DELETE FROM "User" WHERE "id" = ${user.id}`
       
       console.log(`✅ USER COMPLETELY DELETED`)
       
