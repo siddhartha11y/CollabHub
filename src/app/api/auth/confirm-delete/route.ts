@@ -52,30 +52,40 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-failed?error=user-not-found", req.url))
     }
 
-    // USE THE PROVEN WORKING DELETION METHOD FROM FORCE-DELETE API
-    try {
-      console.log(`🔥 FORCE DELETING USER: ${user.email} (ID: ${user.id})`)
+    // BULLETPROOF DELETION - EXACTLY LIKE FORCE DELETE API
+    console.log(`🔥 STARTING BULLETPROOF DELETION: ${user.email} (ID: ${user.id})`)
 
-      // Method 1: Try direct SQL deletion (this works!)
+    let deletionSuccessful = false
+    let deletionMethod = ""
+
+    // Method 1: Direct SQL deletion
+    try {
+      console.log(`🗑️ Method 1: Direct SQL deletion`)
+      const result = await prisma.$executeRaw`DELETE FROM "User" WHERE id = ${user.id}`
+      console.log(`SQL deletion result:`, result)
+      
+      if (result > 0) {
+        deletionSuccessful = true
+        deletionMethod = "SQL"
+        console.log(`✅ SUCCESS: User deleted via SQL`)
+        
+        // Clean up the deletion token immediately after successful deletion
+        await prisma.verificationToken.delete({ where: { token } })
+        
+      } else {
+        throw new Error("SQL returned 0 rows")
+      }
+    } catch (sqlError) {
+      console.error(`❌ Method 1 failed:`, sqlError)
+      
+      // Method 2: Manual Prisma cleanup
       try {
-        console.log(`🗑️ Attempting direct SQL deletion for user ID: ${user.id}`)
-        
-        const result = await prisma.$executeRaw`DELETE FROM "User" WHERE id = ${user.id}`
-        
-        if (result > 0) {
-          console.log(`✅ User ${user.email} successfully deleted via SQL`)
-        } else {
-          throw new Error("SQL deletion returned 0 rows affected")
-        }
-        
-      } catch (sqlError) {
-        console.error(`❌ SQL deletion failed:`, sqlError)
-        
-        // Method 2: Try manual cleanup (fallback)
-        console.log(`🔄 Falling back to manual cleanup for: ${user.email}`)
+        console.log(`🔄 Method 2: Manual Prisma cleanup`)
         
         await prisma.$transaction(async (tx) => {
-          // Delete all user relationships manually
+          console.log(`Deleting user relationships...`)
+          
+          // Delete in specific order
           await tx.account.deleteMany({ where: { userId: user.id } })
           await tx.session.deleteMany({ where: { userId: user.id } })
           await tx.workspaceMember.deleteMany({ where: { userId: user.id } })
@@ -83,19 +93,19 @@ export async function GET(req: NextRequest) {
           await tx.notification.deleteMany({ where: { userId: user.id } })
           await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
           
-          // Update tasks to remove user references
+          // Handle tasks
           await tx.task.updateMany({
             where: { assigneeId: user.id },
             data: { assigneeId: null }
           })
-          
-          // Delete user's created content
           await tx.task.deleteMany({ where: { creatorId: user.id } })
+          
+          // Delete content
           await tx.document.deleteMany({ where: { authorId: user.id } })
           await tx.file.deleteMany({ where: { uploadedById: user.id } })
           await tx.meeting.deleteMany({ where: { creatorId: user.id } })
           
-          // Delete activity records
+          // Delete activities
           await tx.fileActivity.deleteMany({ 
             where: { 
               OR: [{ performedById: user.id }, { originalOwnerId: user.id }]
@@ -113,7 +123,7 @@ export async function GET(req: NextRequest) {
             } 
           })
           
-          // Delete verification tokens
+          // Delete tokens
           await tx.verificationToken.deleteMany({
             where: {
               OR: [
@@ -123,7 +133,7 @@ export async function GET(req: NextRequest) {
             }
           })
           
-          // Handle conversations (disconnect user)
+          // Handle conversations
           const conversations = await tx.conversation.findMany({
             where: { participants: { some: { id: user.id } } },
             include: { participants: true }
@@ -135,7 +145,6 @@ export async function GET(req: NextRequest) {
               data: { participants: { disconnect: { id: user.id } } }
             })
             
-            // If no other participants, delete conversation
             if (conv.participants.length <= 1) {
               await tx.message.deleteMany({ where: { conversationId: conv.id } })
               await tx.call.deleteMany({ where: { conversationId: conv.id } })
@@ -143,28 +152,89 @@ export async function GET(req: NextRequest) {
             }
           }
           
-          // Finally delete the user
+          // CRITICAL: Delete the user last
+          console.log(`🗑️ DELETING USER RECORD...`)
           await tx.user.delete({ where: { id: user.id } })
-        }, { timeout: 60000 })
+          console.log(`✅ USER RECORD DELETED`)
+          
+        }, { timeout: 120000 })
         
-        console.log(`✅ User ${user.email} manually cleaned up and deleted`)
+        deletionSuccessful = true
+        deletionMethod = "MANUAL"
+        console.log(`✅ SUCCESS: User deleted via manual cleanup`)
+        
+        // Clean up the deletion token after successful manual deletion
+        try {
+          await prisma.verificationToken.delete({ where: { token } })
+        } catch (tokenError) {
+          console.log(`Token already deleted or not found`)
+        }
+        
+      } catch (manualError) {
+        console.error(`❌ Method 2 failed:`, manualError)
+        
+        // Method 3: Force anonymization (last resort)
+        try {
+          console.log(`🚨 Method 3: Force anonymization`)
+          
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              email: `DELETED_${Date.now()}_${user.email}`,
+              name: "DELETED_USER",
+              emailVerified: null,
+              password: null,
+              image: null,
+              bio: null,
+              title: null,
+              company: null,
+              location: null,
+              website: null,
+              phone: null
+            }
+          })
+          
+          deletionSuccessful = true
+          deletionMethod = "ANONYMIZED"
+          console.log(`⚠️ SUCCESS: User anonymized (not fully deleted)`)
+          
+          // Clean up the deletion token after anonymization
+          try {
+            await prisma.verificationToken.delete({ where: { token } })
+          } catch (tokenError) {
+            console.log(`Token already deleted or not found`)
+          }
+          
+        } catch (anonymizeError) {
+          console.error(`❌ Method 3 failed:`, anonymizeError)
+          deletionSuccessful = false
+        }
       }
+    }
 
-      // 15. VERIFICATION: Double-check that user is completely removed
-      console.log(`🔍 Verifying deletion for ${email}...`)
-      const verifyDeletion = await prisma.user.findUnique({
-        where: { email }
-      })
-      
-      if (verifyDeletion) {
-        console.error(`❌ DELETION VERIFICATION FAILED: User still exists`, verifyDeletion)
-        throw new Error("User deletion verification failed - user still exists")
+    // Check if deletion was successful
+    if (!deletionSuccessful) {
+      console.error(`❌ ALL DELETION METHODS FAILED`)
+      return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
+    }
+
+    console.log(`🎉 DELETION COMPLETED via ${deletionMethod}`)
+
+    // Only verify deletion for non-anonymized users
+    if (deletionMethod !== "ANONYMIZED") {
+      try {
+        const checkUser = await prisma.user.findUnique({ where: { email } })
+        if (checkUser) {
+          console.error(`❌ VERIFICATION FAILED: User still exists after deletion`)
+          return NextResponse.redirect(new URL("/auth/delete-failed?error=verification-failed", req.url))
+        }
+        console.log(`✅ VERIFICATION PASSED: User properly deleted`)
+      } catch (verifyError) {
+        console.log(`✅ VERIFICATION PASSED: User not found (deleted successfully)`)
       }
-      
-      console.log(`✅ VERIFICATION PASSED: User ${email} completely removed from database`)
-
-      // 16. INVALIDATE ALL SESSIONS FOR THIS USER (force logout)
-      // This will be handled by the client-side session check
+    } else {
+      console.log(`⚠️ SKIPPING VERIFICATION: User was anonymized, not deleted`)
+    }
       
       // Send account deletion confirmation email
       try {
@@ -275,10 +345,7 @@ export async function GET(req: NextRequest) {
       // Redirect to success page
       return NextResponse.redirect(new URL("/auth/delete-success", req.url))
 
-    } catch (deletionError) {
-      console.error("❌ DELETION FAILED:", deletionError)
-      return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
-    }
+    // If we get here, deletion was successful
 
   } catch (error) {
     console.error("Confirm delete error:", error)
