@@ -40,46 +40,54 @@ export async function GET(req: NextRequest) {
 
     console.log(`🔥 STARTING DELETION: ${user.email} (ID: ${user.id})`)
 
-    // STEP 1: Use Prisma's built-in cascading delete
+    // STEP 1: Check if user actually exists first
+    const userExists = await prisma.user.findUnique({ where: { id: user.id } })
+    if (!userExists) {
+      console.log(`❌ User ${user.id} not found in database`)
+      return NextResponse.redirect(new URL("/auth/delete-failed?error=user-not-found", req.url))
+    }
+
+    // STEP 2: Force manual deletion (skip Prisma cascading - it's not working)
     try {
-      await prisma.user.delete({
-        where: { id: user.id }
-      })
+      console.log(`🔄 Starting manual deletion process...`)
       
-      // Clean up the deletion token
-      await prisma.verificationToken.delete({ where: { token } })
-      
-      console.log(`✅ USER DELETED SUCCESSFULLY`)
-      return NextResponse.redirect(new URL("/auth/delete-success", req.url))
-      
-    } catch (deleteError) {
-      console.error(`❌ Prisma delete failed:`, deleteError)
-      
-      // STEP 2: If Prisma fails, try manual cleanup
-      try {
-        console.log(`🔄 Trying manual cleanup...`)
+      await prisma.$transaction(async (tx) => {
+        // Delete in specific order to avoid foreign key constraints
+        console.log(`Deleting accounts...`)
+        await tx.account.deleteMany({ where: { userId: user.id } })
         
-        // Delete related records first
-        await prisma.account.deleteMany({ where: { userId: user.id } })
-        await prisma.session.deleteMany({ where: { userId: user.id } })
-        await prisma.workspaceMember.deleteMany({ where: { userId: user.id } })
-        await prisma.notification.deleteMany({ where: { userId: user.id } })
-        await prisma.message.deleteMany({ where: { senderId: user.id } })
+        console.log(`Deleting sessions...`)
+        await tx.session.deleteMany({ where: { userId: user.id } })
         
-        // Update tasks to remove user references
-        await prisma.task.updateMany({
+        console.log(`Deleting workspace memberships...`)
+        await tx.workspaceMember.deleteMany({ where: { userId: user.id } })
+        
+        console.log(`Deleting notifications...`)
+        await tx.notification.deleteMany({ where: { userId: user.id } })
+        
+        console.log(`Deleting messages...`)
+        await tx.message.deleteMany({ where: { senderId: user.id } })
+        
+        console.log(`Updating tasks (removing assignee)...`)
+        await tx.task.updateMany({
           where: { assigneeId: user.id },
           data: { assigneeId: null }
         })
         
-        // Delete user-created content
-        await prisma.task.deleteMany({ where: { creatorId: user.id } })
-        await prisma.document.deleteMany({ where: { authorId: user.id } })
-        await prisma.file.deleteMany({ where: { uploadedById: user.id } })
-        await prisma.meeting.deleteMany({ where: { creatorId: user.id } })
+        console.log(`Deleting user-created tasks...`)
+        await tx.task.deleteMany({ where: { creatorId: user.id } })
         
-        // Delete activities
-        await prisma.fileActivity.deleteMany({ 
+        console.log(`Deleting documents...`)
+        await tx.document.deleteMany({ where: { authorId: user.id } })
+        
+        console.log(`Deleting files...`)
+        await tx.file.deleteMany({ where: { uploadedById: user.id } })
+        
+        console.log(`Deleting meetings...`)
+        await tx.meeting.deleteMany({ where: { creatorId: user.id } })
+        
+        console.log(`Deleting file activities...`)
+        await tx.fileActivity.deleteMany({ 
           where: { 
             OR: [
               { performedById: user.id }, 
@@ -87,7 +95,9 @@ export async function GET(req: NextRequest) {
             ]
           } 
         })
-        await prisma.documentActivity.deleteMany({ 
+        
+        console.log(`Deleting document activities...`)
+        await tx.documentActivity.deleteMany({ 
           where: { 
             OR: [
               { performedById: user.id }, 
@@ -95,8 +105,12 @@ export async function GET(req: NextRequest) {
             ]
           } 
         })
-        await prisma.taskActivity.deleteMany({ where: { performedById: user.id } })
-        await prisma.meetingActivity.deleteMany({ 
+        
+        console.log(`Deleting task activities...`)
+        await tx.taskActivity.deleteMany({ where: { performedById: user.id } })
+        
+        console.log(`Deleting meeting activities...`)
+        await tx.meetingActivity.deleteMany({ 
           where: { 
             OR: [
               { performedById: user.id }, 
@@ -105,23 +119,23 @@ export async function GET(req: NextRequest) {
           } 
         })
         
-        // Handle conversations - disconnect user from conversations
-        const userConversations = await prisma.conversation.findMany({
+        console.log(`Handling conversations...`)
+        const userConversations = await tx.conversation.findMany({
           where: { participants: { some: { id: user.id } } }
         })
         
         for (const conv of userConversations) {
-          await prisma.conversation.update({
+          await tx.conversation.update({
             where: { id: conv.id },
             data: { participants: { disconnect: { id: user.id } } }
           })
         }
         
-        // Delete invitations
-        await prisma.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
+        console.log(`Deleting invitations...`)
+        await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
         
-        // Delete verification tokens
-        await prisma.verificationToken.deleteMany({
+        console.log(`Deleting verification tokens...`)
+        await tx.verificationToken.deleteMany({
           where: {
             OR: [
               { identifier: email },
@@ -130,16 +144,27 @@ export async function GET(req: NextRequest) {
           }
         })
         
-        // Finally delete the user
-        await prisma.user.delete({ where: { id: user.id } })
+        console.log(`🗑️ FINALLY DELETING USER RECORD...`)
+        const deletedUser = await tx.user.delete({ where: { id: user.id } })
+        console.log(`✅ USER RECORD DELETED:`, deletedUser.id)
         
-        console.log(`✅ MANUAL DELETION SUCCESSFUL`)
-        return NextResponse.redirect(new URL("/auth/delete-success", req.url))
-        
-      } catch (manualError) {
-        console.error(`❌ Manual deletion failed:`, manualError)
-        return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
+      }, { timeout: 60000 })
+      
+      console.log(`✅ TRANSACTION COMPLETED - USER FULLY DELETED`)
+      
+      // Verify deletion worked
+      const checkUser = await prisma.user.findUnique({ where: { id: user.id } })
+      if (checkUser) {
+        console.error(`❌ VERIFICATION FAILED: User still exists after deletion!`)
+        return NextResponse.redirect(new URL("/auth/delete-failed?error=verification-failed", req.url))
       }
+      
+      console.log(`✅ VERIFICATION PASSED: User completely removed`)
+      return NextResponse.redirect(new URL("/auth/delete-success", req.url))
+      
+    } catch (deleteError) {
+      console.error(`❌ Manual deletion failed:`, deleteError)
+      return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
     }
 
   } catch (error) {
