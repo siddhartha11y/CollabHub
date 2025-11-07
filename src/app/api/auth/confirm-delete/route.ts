@@ -52,70 +52,50 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-failed?error=user-not-found", req.url))
     }
 
-    // AGGRESSIVE DIRECT DELETION APPROACH
+    // USE THE PROVEN WORKING DELETION METHOD FROM FORCE-DELETE API
     try {
-      console.log(`🗑️ STARTING AGGRESSIVE DELETION for user: ${user.email} (ID: ${user.id})`)
-      
-      // STEP 1: Use raw SQL to delete user with CASCADE
-      // This bypasses Prisma's transaction limitations
+      console.log(`🔥 FORCE DELETING USER: ${user.email} (ID: ${user.id})`)
+
+      // Method 1: Try direct SQL deletion (this works!)
       try {
-        console.log(`🔥 Attempting direct SQL deletion...`)
+        console.log(`🗑️ Attempting direct SQL deletion for user ID: ${user.id}`)
         
-        // First, try to delete the user directly - let database handle cascades
         const result = await prisma.$executeRaw`DELETE FROM "User" WHERE id = ${user.id}`
-        console.log(`✅ Direct SQL deletion result:`, result)
         
         if (result > 0) {
-          console.log(`🎉 USER SUCCESSFULLY DELETED via SQL: ${user.email}`)
+          console.log(`✅ User ${user.email} successfully deleted via SQL`)
         } else {
           throw new Error("SQL deletion returned 0 rows affected")
         }
         
       } catch (sqlError) {
-        console.error(`❌ Direct SQL deletion failed:`, sqlError)
+        console.error(`❌ SQL deletion failed:`, sqlError)
         
-        // FALLBACK: Manual deletion with Prisma
-        console.log(`🔄 Falling back to manual Prisma deletion...`)
+        // Method 2: Try manual cleanup (fallback)
+        console.log(`🔄 Falling back to manual cleanup for: ${user.email}`)
         
         await prisma.$transaction(async (tx) => {
-          console.log(`🧹 Manual cleanup for user: ${user.email}`)
-          
-          // Delete in specific order to avoid foreign key issues
-          
-          // 1. Delete all workspace-related data first
-          const workspaces = await tx.workspace.findMany({
-            where: { creatorId: user.id },
-            select: { id: true }
-          })
-          
-          for (const workspace of workspaces) {
-            // Delete workspace contents
-            await tx.meetingActivity.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.taskActivity.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.notification.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.documentActivity.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.fileActivity.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.workspaceInvitation.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.file.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.meeting.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.document.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.task.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.workspaceMember.deleteMany({ where: { workspaceId: workspace.id } })
-            await tx.workspace.delete({ where: { id: workspace.id } })
-          }
-          
-          // 2. Delete user's direct relationships
+          // Delete all user relationships manually
+          await tx.account.deleteMany({ where: { userId: user.id } })
+          await tx.session.deleteMany({ where: { userId: user.id } })
           await tx.workspaceMember.deleteMany({ where: { userId: user.id } })
           await tx.message.deleteMany({ where: { senderId: user.id } })
-          await tx.task.updateMany({ where: { assigneeId: user.id }, data: { assigneeId: null } })
+          await tx.notification.deleteMany({ where: { userId: user.id } })
+          await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
+          
+          // Update tasks to remove user references
+          await tx.task.updateMany({
+            where: { assigneeId: user.id },
+            data: { assigneeId: null }
+          })
+          
+          // Delete user's created content
           await tx.task.deleteMany({ where: { creatorId: user.id } })
           await tx.document.deleteMany({ where: { authorId: user.id } })
           await tx.file.deleteMany({ where: { uploadedById: user.id } })
           await tx.meeting.deleteMany({ where: { creatorId: user.id } })
-          await tx.notification.deleteMany({ where: { userId: user.id } })
-          await tx.workspaceInvitation.deleteMany({ where: { invitedById: user.id } })
           
-          // 3. Delete activity records
+          // Delete activity records
           await tx.fileActivity.deleteMany({ 
             where: { 
               OR: [{ performedById: user.id }, { originalOwnerId: user.id }]
@@ -133,19 +113,17 @@ export async function GET(req: NextRequest) {
             } 
           })
           
-          // 4. Delete auth-related data
-          await tx.account.deleteMany({ where: { userId: user.id } })
-          await tx.session.deleteMany({ where: { userId: user.id } })
-          await tx.verificationToken.deleteMany({ 
-            where: { 
+          // Delete verification tokens
+          await tx.verificationToken.deleteMany({
+            where: {
               OR: [
                 { identifier: email },
                 { identifier: { contains: email } }
               ]
-            } 
+            }
           })
           
-          // 5. Handle conversations (disconnect user)
+          // Handle conversations (disconnect user)
           const conversations = await tx.conversation.findMany({
             where: { participants: { some: { id: user.id } } },
             include: { participants: true }
@@ -165,15 +143,11 @@ export async function GET(req: NextRequest) {
             }
           }
           
-          // 6. FINALLY DELETE THE USER
-          console.log(`🗑️ DELETING USER RECORD: ${user.email}`)
-          const deletedUser = await tx.user.delete({ where: { id: user.id } })
-          console.log(`✅ USER DELETED via Prisma:`, deletedUser)
-          
-        }, { 
-          timeout: 120000, // 2 minutes timeout
-          maxWait: 20000   // 20 seconds max wait
-        })
+          // Finally delete the user
+          await tx.user.delete({ where: { id: user.id } })
+        }, { timeout: 60000 })
+        
+        console.log(`✅ User ${user.email} manually cleaned up and deleted`)
       }
 
       // 15. VERIFICATION: Double-check that user is completely removed
@@ -214,12 +188,7 @@ export async function GET(req: NextRequest) {
           day: 'numeric' 
         })
 
-        // Get deletion statistics for email
-        const deletionStats = {
-          workspaces: userWorkspaces.length,
-          conversations: userConversations.length,
-          totalDataPoints: userWorkspaces.length + userConversations.length + messageCount + createdTasksCount + documentCount + fileCount + meetingCount + notificationCount
-        }
+        // Simplified deletion confirmation
 
         await transporter.sendMail({
           from: process.env.EMAIL_FROM,
@@ -248,19 +217,16 @@ export async function GET(req: NextRequest) {
                 </p>
                 
                 <div style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px;margin:20px 0">
-                  <h3 style="color:#059669;margin:0 0 15px 0;font-size:16px">✅ Complete Data Deletion Summary:</h3>
+                  <h3 style="color:#059669;margin:0 0 15px 0;font-size:16px">✅ Account Successfully Deleted</h3>
                   <div style="color:#065f46;margin:0;line-height:1.8">
-                    <p style="margin:5px 0">📁 <strong>${deletionStats.workspaces}</strong> workspaces and all their content</p>
-                    <p style="margin:5px 0">💬 <strong>${deletionStats.conversations}</strong> conversations and messages</p>
-                    <p style="margin:5px 0">📋 <strong>${createdTasksCount}</strong> tasks created by you</p>
-                    <p style="margin:5px 0">📄 <strong>${documentCount}</strong> documents authored</p>
-                    <p style="margin:5px 0">📎 <strong>${fileCount}</strong> files uploaded</p>
-                    <p style="margin:5px 0">🎥 <strong>${meetingCount}</strong> meetings organized</p>
-                    <p style="margin:5px 0">🔔 <strong>${notificationCount}</strong> notifications</p>
+                    <p style="margin:5px 0">📁 All workspaces and their content</p>
+                    <p style="margin:5px 0">💬 All conversations and messages</p>
+                    <p style="margin:5px 0">📋 All tasks, documents, and files</p>
+                    <p style="margin:5px 0">🔔 All notifications and settings</p>
                     <p style="margin:5px 0">🔐 All OAuth accounts and sessions</p>
                     <p style="margin:5px 0">🎫 All verification and security tokens</p>
                     <hr style="margin:10px 0;border:none;border-top:1px solid #bbf7d0">
-                    <p style="margin:5px 0;font-weight:bold">📊 Total: <strong>${deletionStats.totalDataPoints}+</strong> data points permanently removed</p>
+                    <p style="margin:5px 0;font-weight:bold">📊 Your account and all associated data has been permanently removed</p>
                   </div>
                 </div>
                 
@@ -310,34 +276,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/auth/delete-success", req.url))
 
     } catch (deletionError) {
-      console.error("❌ ALL DELETION METHODS FAILED:", deletionError)
-      
-      // LAST RESORT: Mark user as deleted instead of actual deletion
-      try {
-        console.log("🚨 LAST RESORT: Marking user as deleted...")
-        
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            email: `DELETED_${Date.now()}_${user.email}`,
-            name: "DELETED_USER",
-            emailVerified: null,
-            password: null,
-            image: null,
-            bio: null,
-            title: null,
-            company: null,
-            location: null,
-            website: null,
-            phone: null
-          }
-        })
-        
-        console.log("⚠️ User marked as deleted (not fully removed)")
-      } catch (markError) {
-        console.error("❌ Even marking as deleted failed:", markError)
-        return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
-      }
+      console.error("❌ DELETION FAILED:", deletionError)
+      return NextResponse.redirect(new URL("/auth/delete-failed?error=deletion-failed", req.url))
     }
 
   } catch (error) {
