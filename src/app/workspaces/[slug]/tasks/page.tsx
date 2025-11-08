@@ -137,17 +137,23 @@ export default function TasksPage() {
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-4 py-4 lg:py-8">
         {/* Filters */}
-        <div className="flex space-x-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto">
           {["ALL", "TODO", "IN_PROGRESS", "REVIEW", "DONE"].map((status) => (
             <Button
               key={status}
               variant={filter === status ? "default" : "outline"}
               size="sm"
               onClick={() => setFilter(status)}
+              className="flex-shrink-0"
             >
-              {status === "ALL" ? "All Tasks" : status.replace("_", " ")}
+              <span className="hidden sm:inline">
+                {status === "ALL" ? "All Tasks" : status.replace("_", " ")}
+              </span>
+              <span className="sm:hidden">
+                {status === "ALL" ? "All" : status.replace("_", " ").split(" ")[0]}
+              </span>
               {status !== "ALL" && (
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="secondary" className="ml-1 sm:ml-2">
                   {tasksByStatus[status as keyof typeof tasksByStatus]?.length || 0}
                 </Badge>
               )}
@@ -156,7 +162,7 @@ export default function TasksPage() {
         </div>
 
         {/* Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {Object.entries(tasksByStatus).map(([status, statusTasks]) => (
             <div key={status} className="space-y-4">
               <div className="flex items-center justify-between">

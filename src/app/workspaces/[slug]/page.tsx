@@ -135,13 +135,13 @@ export default function WorkspacePage() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-4 mb-6 md:mb-8">
           <Link href={`/workspaces/${params.slug}/tasks`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="flex flex-col items-center justify-center p-6">
-                <CheckSquare className="h-8 w-8 text-blue-600 mb-3" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Tasks</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+              <CardContent className="flex flex-col items-center justify-center p-4 md:p-6">
+                <CheckSquare className="h-6 w-6 md:h-8 md:w-8 text-blue-600 mb-2 md:mb-3" />
+                <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white mb-1">Tasks</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 text-center">
                   Manage your team's work
                 </p>
               </CardContent>
@@ -152,10 +152,10 @@ export default function WorkspacePage() {
 
           <Link href={`/workspaces/${params.slug}/documents`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="flex flex-col items-center justify-center p-6">
-                <FileText className="h-8 w-8 text-purple-600 mb-3" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Documents</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+              <CardContent className="flex flex-col items-center justify-center p-4 md:p-6">
+                <FileText className="h-6 w-6 md:h-8 md:w-8 text-purple-600 mb-2 md:mb-3" />
+                <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white mb-1">Documents</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 text-center">
                   Shared knowledge base
                 </p>
               </CardContent>
@@ -164,10 +164,10 @@ export default function WorkspacePage() {
 
           <Link href={`/workspaces/${params.slug}/files`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="flex flex-col items-center justify-center p-6">
-                <File className="h-8 w-8 text-orange-600 mb-3" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Files</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+              <CardContent className="flex flex-col items-center justify-center p-4 md:p-6">
+                <File className="h-6 w-6 md:h-8 md:w-8 text-orange-600 mb-2 md:mb-3" />
+                <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white mb-1">Files</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 text-center">
                   Shared resources
                 </p>
               </CardContent>
@@ -176,10 +176,10 @@ export default function WorkspacePage() {
 
           <Link href={`/workspaces/${params.slug}/meetings`}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="flex flex-col items-center justify-center p-6">
-                <Video className="h-8 w-8 text-red-600 mb-3" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Meetings</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+              <CardContent className="flex flex-col items-center justify-center p-4 md:p-6">
+                <Video className="h-6 w-6 md:h-8 md:w-8 text-red-600 mb-2 md:mb-3" />
+                <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white mb-1">Meetings</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 text-center">
                   Video conferences
                 </p>
               </CardContent>
@@ -188,7 +188,7 @@ export default function WorkspacePage() {
         </div>
 
         {/* Recent Activity & Team Members */}
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
           {/* Recent Activity */}
           <div className="lg:col-span-2">
             <Card>

@@ -152,7 +152,7 @@ export default function DocumentsPage() {
         </div>
 
         {/* Documents Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDocuments.map((document) => (
             <Card key={document.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
               <CardHeader className="pb-3">

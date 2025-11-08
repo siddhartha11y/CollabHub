@@ -6,6 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Users, Plus, Settings, LogOut } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { redirect } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -77,8 +84,61 @@ export default function Dashboard() {
   return (
     <SessionGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-[100]">
+      {/* Mobile Header */}
+      <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-[100]">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Users className="h-6 w-6 text-blue-600" />
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">CollabHub</h1>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <MessageNotificationBadge />
+              <SimpleNotificationBell />
+              
+              {/* Mobile Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="p-2">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center space-x-2">
+                      <Avatar className="h-4 w-4">
+                        <AvatarImage src={session.user?.image || undefined} />
+                        <AvatarFallback className="bg-blue-600 text-white text-xs">
+                          {session.user?.name?.[0] || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <ThemeToggle />
+                    <span className="ml-2">Theme</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          
+          {/* Mobile Search */}
+          <div className="mt-3">
+            <UserSearch />
+          </div>
+        </div>
+      </header>
+
+      {/* Desktop Header */}
+      <header className="hidden md:block bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-[100]">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4 relative">
             <div className="flex items-center space-x-2">
@@ -107,27 +167,27 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      <main className="container mx-auto px-4 py-4 md:py-8">
+        <div className="mb-6 md:mb-8">
+          <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome back, {session.user?.name?.split(' ')[0]}!
           </h2>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-300">
             Here are your workspaces and recent activity.
           </p>
         </div>
 
         {/* Workspaces Section */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Create New Workspace Card */}
           <Link href="/workspaces/create">
             <Card className="border-dashed border-2 hover:border-blue-500 transition-colors cursor-pointer">
-              <CardContent className="flex flex-col items-center justify-center p-6 h-48">
-                <Plus className="h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <CardContent className="flex flex-col items-center justify-center p-4 md:p-6 h-32 md:h-48">
+                <Plus className="h-8 w-8 md:h-12 md:w-12 text-gray-400 mb-2 md:mb-4" />
+                <h3 className="text-sm md:text-lg font-semibold text-gray-900 dark:text-white mb-1 md:mb-2">
                   Create Workspace
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 text-center">
                   Start collaborating with your team
                 </p>
               </CardContent>
@@ -143,35 +203,35 @@ export default function Dashboard() {
             workspaces.map((workspace: any) => (
               <Link key={workspace.id} href={`/workspaces/${workspace.slug}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{workspace.name}</span>
-                      <Settings className="h-4 w-4 text-gray-400" />
+                  <CardHeader className="pb-2 md:pb-6">
+                    <CardTitle className="flex items-center justify-between text-sm md:text-base">
+                      <span className="truncate pr-2">{workspace.name}</span>
+                      <Settings className="h-3 w-3 md:h-4 md:w-4 text-gray-400 flex-shrink-0" />
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-xs md:text-sm">
                       {workspace._count.members} members • {workspace._count.tasks} tasks
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center space-x-2 mb-4">
-                      <div className="flex -space-x-2">
+                  <CardContent className="pt-0">
+                    <div className="flex items-center space-x-2 mb-2 md:mb-4">
+                      <div className="flex -space-x-1 md:-space-x-2">
                         {workspace.members.slice(0, 3).map((member: any) => (
                           <img 
                             key={member.id}
-                            className="h-6 w-6 rounded-full border-2 border-white" 
+                            className="h-5 w-5 md:h-6 md:w-6 rounded-full border-2 border-white" 
                             src={member.user.image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(member.user.name || "User") + "&background=3b82f6&color=fff"} 
                             alt={member.user.name || "Member"} 
                           />
                         ))}
                         {workspace._count.members > 3 && (
-                          <div className="h-6 w-6 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-xs text-white font-medium">
+                          <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-xs text-white font-medium">
                             +{workspace._count.members - 3}
                           </div>
                         )}
                       </div>
                     </div>
                     {workspace.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                      <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 truncate">
                         {workspace.description}
                       </p>
                     )}
@@ -202,26 +262,26 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-12">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+        <div className="mt-8 md:mt-12">
+          <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4 md:mb-6">
             Quick Actions
           </h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Plus className="h-6 w-6" />
-              <span>New Task</span>
+          <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-4">
+            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
+              <Plus className="h-4 w-4 md:h-6 md:w-6" />
+              <span className="text-xs md:text-sm">New Task</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Users className="h-6 w-6" />
-              <span>Invite Members</span>
+            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
+              <Users className="h-4 w-4 md:h-6 md:w-6" />
+              <span className="text-xs md:text-sm">Invite Members</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Settings className="h-6 w-6" />
-              <span>Settings</span>
+            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
+              <Settings className="h-4 w-4 md:h-6 md:w-6" />
+              <span className="text-xs md:text-sm">Settings</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <LogOut className="h-6 w-6" />
-              <span>Help</span>
+            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
+              <LogOut className="h-4 w-4 md:h-6 md:w-6" />
+              <span className="text-xs md:text-sm">Help</span>
             </Button>
           </div>
         </div>
