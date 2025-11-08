@@ -125,28 +125,7 @@ export default function FilesPage() {
         title="Files"
         subtitle={`${workspace?.name} • ${files.length} files`}
         backHref={`/workspaces/${params.slug}`}
-        actions={[
-          <div key="upload-buttons" className="flex gap-2">
-            <FileUploadModal 
-              workspaceSlug={params.slug as string}
-              onFileUploaded={handleFileUploaded}
-            >
-              <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                5MB
-              </Button>
-            </FileUploadModal>
-            <LargeFileUploadModal 
-              workspaceSlug={params.slug as string}
-              onFileUploaded={handleFileUploaded}
-            >
-              <Button variant="outline" size="sm" className="bg-green-50 border-green-200 hover:bg-green-100">
-                <Upload className="h-4 w-4 mr-2" />
-                50MB
-              </Button>
-            </LargeFileUploadModal>
-          </div>
-        ]}
+        actions={[]}
         dropdownActions={[
           {
             label: "Upload Small Files (5MB)",
@@ -213,8 +192,8 @@ export default function FilesPage() {
             />
           </div>
           
-          {/* Desktop Upload Options */}
-          <div className="hidden md:flex gap-3">
+          {/* Upload Options */}
+          <div className="flex gap-3">
             <FileUploadModal 
               workspaceSlug={params.slug as string}
               onFileUploaded={handleFileUploaded}
@@ -228,7 +207,7 @@ export default function FilesPage() {
               workspaceSlug={params.slug as string}
               onFileUploaded={handleFileUploaded}
             >
-              <Button className="bg-green-600 hover:bg-green-700">
+              <Button className="bg-blue-600 hover:bg-blue-700">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Large Files (50MB)
               </Button>
@@ -346,7 +325,7 @@ export default function FilesPage() {
                 workspaceSlug={params.slug as string}
                 onFileUploaded={handleFileUploaded}
               >
-                <Button variant="outline" className="bg-green-50 border-green-200 hover:bg-green-100">
+                <Button className="bg-blue-600 hover:bg-blue-700">
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Large Files (50MB)
                 </Button>
