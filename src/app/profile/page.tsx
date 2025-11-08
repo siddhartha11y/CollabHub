@@ -204,8 +204,31 @@ export default function ProfilePage() {
   return (
     <SessionGuard>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Header */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 z-10">
+      {/* Mobile Header */}
+      <div className="md:hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 z-10">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm" className="p-2">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Profile</h1>
+              </div>
+            </div>
+            <Link href="/profile/edit">
+              <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                <Edit3 className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden md:block bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -231,12 +254,12 @@ export default function ProfilePage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         <div className="space-y-8">
           {/* Profile Header - Instagram/Social Media Style */}
           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-3xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
             {/* Cover Photo Area */}
-            <div className="h-48 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 relative">
+            <div className="h-32 md:h-48 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 relative">
               <div className="absolute inset-0 bg-black/20"></div>
               <div className="absolute bottom-4 left-6 text-white">
                 <div className="flex items-center space-x-2">
@@ -247,27 +270,27 @@ export default function ProfilePage() {
             </div>
             
             {/* Profile Info */}
-            <div className="px-6 pb-6 -mt-16 relative">
+            <div className="px-4 md:px-6 pb-4 md:pb-6 -mt-12 md:-mt-16 relative">
               <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
                 <div className="relative">
                   <img
                     src={profile.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&background=3b82f6&color=fff&size=160`}
                     alt="Profile"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-2xl ring-4 ring-blue-100 dark:ring-gray-700"
+                    className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-2xl ring-4 ring-blue-100 dark:ring-gray-700"
                   />
-                  <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 rounded-full border-2 border-white"></div>
+                  <div className="absolute bottom-1 right-1 md:bottom-2 md:right-2 w-4 h-4 md:w-6 md:h-6 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
                 
                 <div className="flex-1 text-center sm:text-left mt-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center sm:justify-start">
+                      <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center sm:justify-start">
                         {profile.name || "User"} 
                         <span className="ml-2 text-blue-500">✓</span>
                       </h1>
                       {profile.title && (
-                        <p className="text-lg text-gray-600 dark:text-gray-300 mt-1 flex items-center justify-center sm:justify-start">
-                          <Briefcase className="h-4 w-4 mr-2" />
+                        <p className="text-sm md:text-lg text-gray-600 dark:text-gray-300 mt-1 flex items-center justify-center sm:justify-start">
+                          <Briefcase className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                           {profile.title}
                           {profile.company && ` at ${profile.company}`}
                         </p>
@@ -275,18 +298,18 @@ export default function ProfilePage() {
                     </div>
                     
                     {/* Stats - Real data from workspaces */}
-                    <div className="flex space-x-6 mt-4 sm:mt-0">
+                    <div className="flex space-x-4 md:space-x-6 mt-4 sm:mt-0">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
-                        <div className="text-sm text-gray-500">Projects</div>
+                        <div className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">0</div>
+                        <div className="text-xs md:text-sm text-gray-500">Projects</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
-                        <div className="text-sm text-gray-500">Tasks</div>
+                        <div className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">0</div>
+                        <div className="text-xs md:text-sm text-gray-500">Tasks</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 dark:text-white">0</div>
-                        <div className="text-sm text-gray-500">Collaborations</div>
+                        <div className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">0</div>
+                        <div className="text-xs md:text-sm text-gray-500">Collaborations</div>
                       </div>
                     </div>
                   </div>
