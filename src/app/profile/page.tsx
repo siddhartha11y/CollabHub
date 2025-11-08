@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -156,6 +156,8 @@ export default function ProfilePage() {
   const handleDeleteAccount = async () => {
     setDeleteLoading(true)
     try {
+      console.log(`🔥 DELETING ACCOUNT: ${profile.email}`)
+      
       const response = await fetch("/api/auth/delete-account", {
         method: "POST",
         headers: {
@@ -168,11 +170,20 @@ export default function ProfilePage() {
 
       const result = await response.json()
 
-      if (response.ok) {
+      if (response.ok && result.success) {
+        console.log(`✅ Account deletion successful`)
         setShowConfirmDialog(false)
-        setShowDeleteDialog(true) // Show "check email" dialog
+        
+        // Show success message and redirect
+        alert("Account successfully deleted! You will be redirected to the homepage.")
+        
+        // Sign out and redirect
+        await signOut({ redirect: false })
+        router.push('/')
+        
       } else {
-        alert(result.error || "Failed to initiate account deletion")
+        console.error(`❌ Account deletion failed:`, result)
+        alert(result.error || "Failed to delete account. Please try again.")
       }
     } catch (error) {
       console.error("Delete account error:", error)
@@ -530,8 +541,7 @@ export default function ProfilePage() {
                 <div className="flex-1">
                   <h4 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">Delete Account</h4>
                   <p className="text-red-700 dark:text-red-200 text-sm mb-4 leading-relaxed">
-                    Permanently delete your CollabHub account and all associated data. This action cannot be undone. 
-                    You will receive an email confirmation before your account is deleted.
+                    Permanently delete your CollabHub account and all associated data. This action cannot be undone.
                   </p>
                   <div className="bg-red-100 dark:bg-red-900/50 rounded-lg p-3 mb-4">
                     <p className="text-red-800 dark:text-red-200 text-xs font-medium">
@@ -598,12 +608,12 @@ export default function ProfilePage() {
               Final Confirmation
             </DialogTitle>
             <DialogDescription className="text-left space-y-3">
-              <p>You are about to permanently delete your account. We will send a confirmation email to:</p>
+              <p>You are about to permanently delete your account:</p>
               <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
                 <p className="font-mono text-sm">{profile.email}</p>
               </div>
               <p className="text-red-600 dark:text-red-400 font-medium">
-                Click the link in the email to complete the deletion process.
+                This action cannot be undone and will immediately delete all your data.
               </p>
             </DialogDescription>
           </DialogHeader>
@@ -624,12 +634,12 @@ export default function ProfilePage() {
               {deleteLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Sending Email...
+                  Deleting Account...
                 </>
               ) : (
                 <>
-                  <Mail className="h-4 w-4 mr-2" />
-                  Send Deletion Email
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Account Now
                 </>
               )}
             </Button>
