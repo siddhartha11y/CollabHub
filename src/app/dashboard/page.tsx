@@ -16,7 +16,7 @@ import {
 import { redirect } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { SimpleNotificationBell } from "@/components/simple-notification-bell"
+import { RealNotificationBell } from "@/components/real-notification-bell"
 import { TestNotificationButton } from "@/components/test-notification-button"
 import { UserSearch } from "@/components/user-search"
 import { MessageNotificationBadge } from "@/components/message-notification-badge"
@@ -95,7 +95,7 @@ export default function Dashboard() {
             
             <div className="flex items-center space-x-2">
               <MessageNotificationBadge />
-              <SimpleNotificationBell />
+              <RealNotificationBell />
               
               {/* Mobile Menu */}
               <DropdownMenu>
@@ -154,7 +154,7 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <MessageNotificationBadge />
               <TestNotificationButton />
-              <SimpleNotificationBell />
+              <RealNotificationBell />
               <ThemeToggle />
               <UserProfileLink userId={session.user?.id} userName={session.user?.name} />
               <Button variant="outline" size="sm" onClick={() => signOut()}>

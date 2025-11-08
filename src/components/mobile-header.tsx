@@ -88,13 +88,13 @@ export function MobileHeader({
           <div className="flex items-center space-x-3 min-w-0 flex-1">
             {backHref && (
               <Link href={backHref}>
-                <Button variant="ghost" size="sm" className="p-2">
+                <Button variant="ghost" size="sm" className="p-2 flex-shrink-0">
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
             )}
             
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 mr-2">
               <h1 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
                 {title}
               </h1>
@@ -106,18 +106,22 @@ export function MobileHeader({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            {/* Primary Action (if only one action) */}
-            {actions.length === 1 && actions[0]}
+          <div className="flex items-center space-x-1 flex-shrink-0">
+            {/* Primary Action (if only one action) - Make it smaller on mobile */}
+            {actions.length === 1 && (
+              <div className="flex-shrink-0">
+                {actions[0]}
+              </div>
+            )}
             
             {/* Navigation Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-2">
+                <Button variant="ghost" size="sm" className="p-2 flex-shrink-0">
                   <Menu className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-48 z-[60]">
                 {navigationItems.map((item) => (
                   <DropdownMenuItem key={item.href} asChild>
                     <Link 
@@ -138,11 +142,11 @@ export function MobileHeader({
             {(actions.length > 1 || dropdownActions.length > 0) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="p-2">
+                  <Button variant="ghost" size="sm" className="p-2 flex-shrink-0">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 z-[60]">
                   {actions.length > 1 && (
                     <>
                       {actions.map((action, index) => (

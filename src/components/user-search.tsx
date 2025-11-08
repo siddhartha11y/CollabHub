@@ -95,7 +95,7 @@ export function UserSearch() {
 
       {/* Search Results Dropdown - FIXED POSITION */}
       {isOpen && (
-        <div className="fixed left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[500px] overflow-y-auto z-[9999]" style={{ top: 'calc(4rem + 0.5rem)' }}>
+        <div className="fixed left-1/2 transform -translate-x-1/2 mt-2 w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[500px] overflow-y-auto z-[99999]" style={{ top: 'calc(4rem + 0.5rem)' }}>
           {loading ? (
             <div className="p-4 text-center text-gray-500">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
