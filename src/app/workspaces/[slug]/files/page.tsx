@@ -126,16 +126,26 @@ export default function FilesPage() {
         subtitle={`${workspace?.name} • ${files.length} files`}
         backHref={`/workspaces/${params.slug}`}
         actions={[
-          <FileUploadModal 
-            key="small-upload"
-            workspaceSlug={params.slug as string}
-            onFileUploaded={handleFileUploaded}
-          >
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Upload
-            </Button>
-          </FileUploadModal>
+          <div key="upload-buttons" className="flex gap-2">
+            <FileUploadModal 
+              workspaceSlug={params.slug as string}
+              onFileUploaded={handleFileUploaded}
+            >
+              <Button variant="outline" size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                5MB
+              </Button>
+            </FileUploadModal>
+            <LargeFileUploadModal 
+              workspaceSlug={params.slug as string}
+              onFileUploaded={handleFileUploaded}
+            >
+              <Button variant="outline" size="sm" className="bg-green-50 border-green-200 hover:bg-green-100">
+                <Upload className="h-4 w-4 mr-2" />
+                50MB
+              </Button>
+            </LargeFileUploadModal>
+          </div>
         ]}
         dropdownActions={[
           {
@@ -143,7 +153,8 @@ export default function FilesPage() {
             icon: <Upload className="h-4 w-4" />,
             onClick: () => {
               // Trigger small file upload modal
-              document.querySelector('[data-upload-small]')?.click()
+              const button = document.querySelector('[data-upload-small]') as HTMLButtonElement
+              button?.click()
             }
           },
           {
@@ -151,7 +162,8 @@ export default function FilesPage() {
             icon: <Upload className="h-4 w-4" />,
             onClick: () => {
               // Trigger large file upload modal
-              document.querySelector('[data-upload-large]')?.click()
+              const button = document.querySelector('[data-upload-large]') as HTMLButtonElement
+              button?.click()
             }
           },
           {
@@ -159,7 +171,8 @@ export default function FilesPage() {
             icon: <History className="h-4 w-4" />,
             onClick: () => {
               // Trigger activity log modal
-              document.querySelector('[data-activity-log]')?.click()
+              const button = document.querySelector('[data-activity-log]') as HTMLButtonElement
+              button?.click()
             }
           }
         ]}
@@ -188,8 +201,8 @@ export default function FilesPage() {
 
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-4 py-4 lg:py-8">
-        {/* Search */}
-        <div className="mb-4 md:mb-6">
+        {/* Upload Options & Search */}
+        <div className="mb-4 md:mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
           <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
@@ -198,6 +211,28 @@ export default function FilesPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 w-full"
             />
+          </div>
+          
+          {/* Desktop Upload Options */}
+          <div className="hidden md:flex gap-3">
+            <FileUploadModal 
+              workspaceSlug={params.slug as string}
+              onFileUploaded={handleFileUploaded}
+            >
+              <Button variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Files (5MB)
+              </Button>
+            </FileUploadModal>
+            <LargeFileUploadModal 
+              workspaceSlug={params.slug as string}
+              onFileUploaded={handleFileUploaded}
+            >
+              <Button className="bg-green-600 hover:bg-green-700">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Large Files (50MB)
+              </Button>
+            </LargeFileUploadModal>
           </div>
         </div>
 
@@ -297,15 +332,26 @@ export default function FilesPage() {
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               Upload your first file to start sharing resources with your team.
             </p>
-            <FileUploadModal 
-              workspaceSlug={params.slug as string}
-              onFileUploaded={handleFileUploaded}
-            >
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Upload First File
-              </Button>
-            </FileUploadModal>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <FileUploadModal 
+                workspaceSlug={params.slug as string}
+                onFileUploaded={handleFileUploaded}
+              >
+                <Button>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Files (5MB)
+                </Button>
+              </FileUploadModal>
+              <LargeFileUploadModal 
+                workspaceSlug={params.slug as string}
+                onFileUploaded={handleFileUploaded}
+              >
+                <Button variant="outline" className="bg-green-50 border-green-200 hover:bg-green-100">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Large Files (50MB)
+                </Button>
+              </LargeFileUploadModal>
+            </div>
           </div>
         )}
 
