@@ -70,6 +70,8 @@ export async function POST(
       }
     })
 
+    console.log(`Checking membership for ${email} in workspace ${workspace.id}:`, existingMember ? 'Already a member' : 'Not a member')
+
     if (existingMember) {
       return NextResponse.json(
         { error: "User is already a member of this workspace" },
@@ -127,7 +129,8 @@ export async function POST(
     // If user exists, create a notification for them
     if (invitedUser) {
       try {
-        await prisma.notification.create({
+        console.log(`Creating notification for user ${invitedUser.id} (${invitedUser.email})`)
+        const notification = await prisma.notification.create({
           data: {
             userId: invitedUser.id,
             type: "WORKSPACE_INVITATION",
@@ -136,9 +139,12 @@ export async function POST(
             workspaceId: workspace.id
           }
         })
+        console.log(`Notification created successfully:`, notification.id)
       } catch (notificationError) {
         console.error("Failed to create invitation notification:", notificationError)
       }
+    } else {
+      console.log(`No user found with email: ${email}`)
     }
 
     // Send invitation email
