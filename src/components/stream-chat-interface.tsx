@@ -15,7 +15,7 @@ import {
   useChannelStateContext,
   useChatContext,
 } from "stream-chat-react"
-// Removed StreamVideo imports to fix crashes
+import { StreamVideo, StreamVideoClient, Call } from "@stream-io/video-react-sdk"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -172,17 +172,19 @@ export function StreamChatInterface() {
   const { data: session } = useSession()
   const router = useRouter()
   const [client, setClient] = useState<StreamChat | null>(null)
+  const [videoClient, setVideoClient] = useState<StreamVideoClient | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [showSearch, setShowSearch] = useState(false)
-  const [showCallModal, setShowCallModal] = useState(false)
-  const [callType, setCallType] = useState<'audio' | 'video'>('audio')
+  const [activeCall, setActiveCall] = useState<Call | null>(null)
 
 
   useEffect(() => {
+    let isMounted = true
+    
     const initChat = async () => {
-      if (!session?.user?.email) return
+      if (!session?.user?.email || !isMounted) return
 
       try {
         const response = await fetch("/api/stream/token", {
@@ -209,18 +211,37 @@ export function StreamChatInterface() {
           token
         )
 
-        setClient(chatClient)
+        // Initialize Video Client
+        const videoClientInstance = new StreamVideoClient({
+          apiKey,
+          user: {
+            id: userId,
+            name: userName,
+          },
+          token,
+        })
+
+        if (isMounted) {
+          setClient(chatClient)
+          setVideoClient(videoClientInstance)
+        }
       } catch (err) {
         console.error("Stream initialization error:", err)
-        setError(err instanceof Error ? err.message : "Failed to initialize chat")
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Failed to initialize chat")
+        }
       }
     }
 
     initChat()
 
     return () => {
+      isMounted = false
       if (client) {
-        client.disconnectUser()
+        client.disconnectUser().catch(console.error)
+      }
+      if (videoClient) {
+        videoClient.disconnectUser().catch(console.error)
       }
     }
   }, [session])
@@ -260,20 +281,59 @@ export function StreamChatInterface() {
     }
   }, [client])
 
-  const startCall = useCallback(async (type: 'audio' | 'video') => {
-    setCallType(type)
-    setShowCallModal(true)
-    
-    // For now, just show a modal. In a real implementation, you would:
-    // 1. Send a message to the channel about the call
-    // 2. Use WebRTC or a video calling service
-    // 3. Handle call acceptance/rejection
-    
-    // Auto-hide the modal after 10 seconds to simulate call timeout
-    setTimeout(() => {
-      setShowCallModal(false)
-    }, 10000)
-  }, [])
+  const startCall = useCallback(async (callType: 'audio' | 'video') => {
+    if (!videoClient || !client) return
+
+    try {
+      // Get current channel from context
+      const activeChannel = client.activeChannels?.[0] || Object.values(client.activeChannels || {})[0]
+      if (!activeChannel) {
+        console.error('No active channel found')
+        return
+      }
+
+      // Get other members in the channel
+      const members = Object.values(activeChannel.state.members || {})
+      const otherMembers = members
+        .filter((member: any) => member.user_id !== client.userID)
+        .map((member: any) => ({ user_id: member.user_id }))
+
+      if (otherMembers.length === 0) {
+        console.error('No other members to call')
+        return
+      }
+
+      // Create a unique call ID
+      const callId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      // Create the call
+      const call = videoClient.call(callType === 'video' ? 'default' : 'audio_room', callId)
+      
+      // Create the call with members
+      await call.getOrCreate({
+        data: {
+          members: [
+            { user_id: client.userID! },
+            ...otherMembers
+          ],
+        },
+      })
+
+      // Join the call
+      await call.join()
+      
+      setActiveCall(call)
+
+      // Send a message to the channel about the call
+      await activeChannel.sendMessage({
+        text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started`,
+        type: 'system',
+      })
+
+    } catch (error) {
+      console.error("Failed to start call:", error)
+    }
+  }, [videoClient, client])
 
   useEffect(() => {
     const delayedSearch = setTimeout(() => {
@@ -330,7 +390,7 @@ STREAM_API_SECRET=your_secret
     )
   }
 
-  if (!client) {
+  if (!client || !videoClient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-black to-purple-900 flex items-center justify-center">
         <div className="text-center">
@@ -359,7 +419,8 @@ STREAM_API_SECRET=your_secret
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex">
+    <StreamVideo client={videoClient}>
+      <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex">
         <Chat client={client} theme="str-chat__theme-dark">
           {/* Enhanced Sidebar */}
           <div className="w-[380px] bg-black/50 backdrop-blur-xl border-r border-gray-800/50 flex flex-col">
@@ -486,36 +547,37 @@ STREAM_API_SECRET=your_secret
           </div>
         </Chat>
 
-        {/* Call Modal */}
-        {showCallModal && (
-          <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center">
-            <div className="bg-gray-900/90 rounded-2xl p-8 text-center max-w-md">
-              {callType === 'video' ? (
-                <Video className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-pulse" />
-              ) : (
-                <Phone className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
-              )}
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {callType === 'video' ? 'Video Call' : 'Voice Call'}
-              </h3>
-              <p className="text-gray-400 mb-6">
-                {callType === 'video' ? 'Starting video call...' : 'Starting voice call...'}
-              </p>
-              <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 mb-6">
-                <p className="text-yellow-400 text-sm">
-                  📞 Video calling feature is in development. This is a demo modal.
-                </p>
+        {/* Active Call UI */}
+        {activeCall && (
+          <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+            <div className="bg-gray-900 rounded-2xl p-8 text-center max-w-md w-full mx-4">
+              <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Video className="w-10 h-10 text-white" />
               </div>
-              <Button
-                onClick={() => setShowCallModal(false)}
-                variant="destructive"
-                className="rounded-full"
-              >
-                End Call
-              </Button>
+              <h3 className="text-xl font-semibold text-white mb-2">Call Active</h3>
+              <p className="text-gray-400 mb-6">Connected to call</p>
+              
+              <div className="flex justify-center gap-4">
+                <Button
+                  onClick={async () => {
+                    try {
+                      await activeCall.leave()
+                      setActiveCall(null)
+                    } catch (error) {
+                      console.error('Failed to leave call:', error)
+                      setActiveCall(null)
+                    }
+                  }}
+                  variant="destructive"
+                  className="rounded-full px-6"
+                >
+                  End Call
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </div>
+    </StreamVideo>
   )
 }
