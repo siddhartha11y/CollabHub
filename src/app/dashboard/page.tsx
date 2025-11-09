@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Users, Plus, Settings, LogOut, User } from "lucide-react"
+import { Users, Plus, Settings, LogOut, User, Sun, Moon } from "lucide-react"
+import { useTheme } from "next-themes"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +43,7 @@ function UserProfileLink({ userId, userName }: { userId?: string, userName?: str
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
+  const { setTheme, theme } = useTheme()
   const [workspaces, setWorkspaces] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -107,7 +109,7 @@ export default function Dashboard() {
               <DropdownMenuContent align="end" className="w-48" style={{ zIndex: 99999 }}>
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="flex items-center space-x-2">
-                    <Avatar className="h-4 w-4">
+                    <Avatar className="h-5 w-5">
                       <AvatarImage src={session.user?.image || undefined} />
                       <AvatarFallback className="bg-blue-600 text-white text-xs">
                         {session.user?.name?.[0] || "U"}
@@ -117,15 +119,16 @@ export default function Dashboard() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <div className="flex items-center space-x-2 w-full">
-                    <ThemeToggle />
-                    <span>Theme</span>
+                <DropdownMenuItem onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+                  <div className="h-5 w-5 flex items-center justify-center mr-2 relative">
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                   </div>
+                  <span>Theme</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="h-5 w-5 mr-2" />
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
