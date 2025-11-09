@@ -120,7 +120,7 @@ export async function POST(
         await prisma.notification.create({
           data: {
             userId: invitedUser.id,
-            type: "TASK_ASSIGNED", // Using existing type, could add WORKSPACE_INVITATION later
+            type: "WORKSPACE_INVITATION",
             title: "Workspace Invitation",
             message: `${user.name} invited you to join "${workspace.name}"`,
             workspaceId: workspace.id

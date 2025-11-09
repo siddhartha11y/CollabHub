@@ -12,12 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
-import { Bell, Check, X, Clock, CheckSquare, Users } from "lucide-react"
+import { Bell, Check, X, Clock, CheckSquare, Users, UserPlus } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 interface Notification {
   id: string
-  type: "TASK_ASSIGNED" | "TASK_STATUS_CHANGED" | "TASK_COMPLETED"
+  type: "TASK_ASSIGNED" | "TASK_STATUS_CHANGED" | "TASK_COMPLETED" | "WORKSPACE_INVITATION"
   title: string
   message: string
   isRead: boolean
@@ -119,8 +119,11 @@ export function RealNotificationBell() {
     // Close dropdown
     setIsOpen(false)
 
-    // Navigate to the relevant page
-    if (notification.workspace?.slug) {
+    // Navigate to the relevant page based on notification type
+    if (notification.type === "WORKSPACE_INVITATION") {
+      // For workspace invitations, navigate to a join page or show invitation details
+      router.push(`/workspaces/invitations`)
+    } else if (notification.workspace?.slug) {
       router.push(`/workspaces/${notification.workspace.slug}/tasks`)
     }
   }
@@ -133,6 +136,8 @@ export function RealNotificationBell() {
         return <Clock className="h-4 w-4 text-orange-500" />
       case "TASK_COMPLETED":
         return <Check className="h-4 w-4 text-green-500" />
+      case "WORKSPACE_INVITATION":
+        return <UserPlus className="h-4 w-4 text-purple-500" />
       default:
         return <Bell className="h-4 w-4 text-gray-500" />
     }
