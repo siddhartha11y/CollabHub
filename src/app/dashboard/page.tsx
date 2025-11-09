@@ -97,32 +97,31 @@ export default function Dashboard() {
             <MessageNotificationBadge />
             <RealNotificationBell />
             
-            {/* Mobile Profile Menu */}
+            {/* Mobile Settings Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-1">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={session.user?.image || undefined} />
-                    <AvatarFallback className="bg-blue-600 text-white">
-                      {session.user?.name?.[0] || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                <Button variant="ghost" size="sm" className="p-2">
+                  <Settings className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 z-[99999]">
+              <DropdownMenuContent align="end" className="w-48" style={{ zIndex: 99999 }}>
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={session.user?.image || undefined} />
+                      <AvatarFallback className="bg-blue-600 text-white text-xs">
+                        {session.user?.name?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <Settings className="h-4 w-4 mr-2" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <ThemeToggle />
-                  <span className="ml-2">Theme</span>
+                  <div className="flex items-center space-x-2 w-full">
+                    <ThemeToggle />
+                    <span>Theme</span>
+                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
@@ -135,7 +134,7 @@ export default function Dashboard() {
         </div>
         
         {/* Mobile Search Bar - Full Width */}
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 relative z-10">
           <UserSearch />
         </div>
       </header>
