@@ -153,7 +153,7 @@ export function RealNotificationBell() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-96" style={{ zIndex: 99998 }}>
+      <DropdownMenuContent align="end" className="w-80 md:w-96" style={{ zIndex: 99998 }}>
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notifications</span>
           {unreadCount > 0 && (
