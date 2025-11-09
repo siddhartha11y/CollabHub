@@ -17,7 +17,7 @@ import { redirect } from "next/navigation"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { RealNotificationBell } from "@/components/real-notification-bell"
-import { TestNotificationButton } from "@/components/test-notification-button"
+
 import { UserSearch } from "@/components/user-search"
 import { MessageNotificationBadge } from "@/components/message-notification-badge"
 import { useUserImage } from "@/hooks/use-user-image"
@@ -104,7 +104,7 @@ export default function Dashboard() {
                     <Settings className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 z-[60]">
                   <DropdownMenuItem asChild>
                     <Link href="/profile" className="flex items-center space-x-2">
                       <Avatar className="h-4 w-4">
@@ -131,7 +131,7 @@ export default function Dashboard() {
           </div>
           
           {/* Mobile Search */}
-          <div className="mt-3">
+          <div className="mt-3 px-1">
             <UserSearch />
           </div>
         </div>
@@ -153,7 +153,6 @@ export default function Dashboard() {
             
             <div className="flex items-center space-x-4">
               <MessageNotificationBadge />
-              <TestNotificationButton />
               <RealNotificationBell />
               <ThemeToggle />
               <UserProfileLink userId={session.user?.id} userName={session.user?.name} />

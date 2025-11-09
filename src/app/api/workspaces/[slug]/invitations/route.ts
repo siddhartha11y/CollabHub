@@ -109,6 +109,28 @@ export async function POST(
       }
     })
 
+    // Check if the invited user already exists in the system
+    const invitedUser = await prisma.user.findUnique({
+      where: { email }
+    })
+
+    // If user exists, create a notification for them
+    if (invitedUser) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: invitedUser.id,
+            type: "TASK_ASSIGNED", // Using existing type, could add WORKSPACE_INVITATION later
+            title: "Workspace Invitation",
+            message: `${user.name} invited you to join "${workspace.name}"`,
+            workspaceId: workspace.id
+          }
+        })
+      } catch (notificationError) {
+        console.error("Failed to create invitation notification:", notificationError)
+      }
+    }
+
     // Send invitation email
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_SERVER_HOST,
