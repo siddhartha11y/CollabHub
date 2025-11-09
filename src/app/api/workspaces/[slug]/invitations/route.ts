@@ -77,20 +77,30 @@ export async function POST(
       )
     }
 
-    // Check if there's already a pending invitation
+    // Check for existing invitations
     const existingInvitation = await prisma.workspaceInvitation.findFirst({
       where: {
         workspaceId: workspace.id,
-        email: email,
-        status: "PENDING"
+        email: email
+      },
+      orderBy: {
+        createdAt: 'desc' // Get the most recent invitation
       }
     })
 
-    if (existingInvitation) {
+    // Block resending if the most recent invitation was declined
+    if (existingInvitation && existingInvitation.status === "DECLINED") {
       return NextResponse.json(
-        { error: "Invitation already sent to this email" },
+        { error: "This user has declined the invitation to join this workspace" },
         { status: 400 }
       )
+    }
+
+    // If there's a pending invitation, delete it and create a new one (for resending)
+    if (existingInvitation && existingInvitation.status === "PENDING") {
+      await prisma.workspaceInvitation.delete({
+        where: { id: existingInvitation.id }
+      })
     }
 
     // Generate invitation token
