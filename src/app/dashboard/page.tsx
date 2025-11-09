@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Users, Plus, Settings, LogOut } from "lucide-react"
+import { Users, Plus, Settings, LogOut, User } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,61 +84,64 @@ export default function Dashboard() {
   return (
     <SessionGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Mobile Header */}
-      <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-[100]">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Users className="h-6 w-6 text-blue-600" />
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">CollabHub</h1>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <MessageNotificationBadge />
-              <RealNotificationBell />
-              
-              {/* Mobile Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="p-2">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 z-[60]">
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center space-x-2">
-                      <Avatar className="h-4 w-4">
-                        <AvatarImage src={session.user?.image || undefined} />
-                        <AvatarFallback className="bg-blue-600 text-white text-xs">
-                          {session.user?.name?.[0] || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <ThemeToggle />
-                    <span className="ml-2">Theme</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+      {/* Mobile Header - Completely Redesigned */}
+      <header className="md:hidden bg-white dark:bg-gray-800 border-b sticky top-0 z-[100]">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center space-x-3">
+            <Users className="h-8 w-8 text-blue-600" />
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">CollabHub</h1>
           </div>
           
-          {/* Mobile Search */}
-          <div className="mt-3 px-1">
-            <UserSearch />
+          <div className="flex items-center space-x-3">
+            <MessageNotificationBadge />
+            <RealNotificationBell />
+            
+            {/* Mobile Profile Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="p-1">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={session.user?.image || undefined} />
+                    <AvatarFallback className="bg-blue-600 text-white">
+                      {session.user?.name?.[0] || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 z-[99999]">
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="h-4 w-4 mr-2" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <ThemeToggle />
+                  <span className="ml-2">Theme</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
+        
+        {/* Mobile Search Bar - Full Width */}
+        <div className="px-4 pb-4">
+          <UserSearch />
         </div>
       </header>
 
       {/* Desktop Header */}
-      <header className="hidden md:block bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-[100]">
+      <header className="hidden md:block bg-white dark:bg-gray-800 shadow-sm border-b sticky top-0 z-[40]">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4 relative">
             <div className="flex items-center space-x-2">
@@ -166,18 +169,18 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-4 md:py-8">
-        <div className="mb-6 md:mb-8">
-          <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      <main className="container mx-auto px-4 py-6 md:py-8">
+        <div className="mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
             Welcome back, {session.user?.name?.split(' ')[0]}!
           </h2>
-          <p className="text-sm md:text-base text-gray-600 dark:text-gray-300">
+          <p className="text-base text-gray-600 dark:text-gray-300">
             Here are your workspaces and recent activity.
           </p>
         </div>
 
         {/* Workspaces Section */}
-        <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Create New Workspace Card */}
           <Link href="/workspaces/create">
             <Card className="border-dashed border-2 hover:border-blue-500 transition-colors cursor-pointer">
@@ -261,26 +264,26 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8 md:mt-12">
-          <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4 md:mb-6">
+        <div className="mt-12">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
             Quick Actions
           </h3>
-          <div className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-4">
-            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
-              <Plus className="h-4 w-4 md:h-6 md:w-6" />
-              <span className="text-xs md:text-sm">New Task</span>
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Button variant="outline" className="h-20 flex-col space-y-2 text-center">
+              <Plus className="h-6 w-6" />
+              <span className="text-sm font-medium">New Task</span>
             </Button>
-            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
-              <Users className="h-4 w-4 md:h-6 md:w-6" />
-              <span className="text-xs md:text-sm">Invite Members</span>
+            <Button variant="outline" className="h-20 flex-col space-y-2 text-center">
+              <Users className="h-6 w-6" />
+              <span className="text-sm font-medium">Invite Members</span>
             </Button>
-            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
-              <Settings className="h-4 w-4 md:h-6 md:w-6" />
-              <span className="text-xs md:text-sm">Settings</span>
+            <Button variant="outline" className="h-20 flex-col space-y-2 text-center">
+              <Settings className="h-6 w-6" />
+              <span className="text-sm font-medium">Settings</span>
             </Button>
-            <Button variant="outline" className="h-16 md:h-20 flex-col space-y-1 md:space-y-2">
-              <LogOut className="h-4 w-4 md:h-6 md:w-6" />
-              <span className="text-xs md:text-sm">Help</span>
+            <Button variant="outline" className="h-20 flex-col space-y-2 text-center">
+              <LogOut className="h-6 w-6" />
+              <span className="text-sm font-medium">Help</span>
             </Button>
           </div>
         </div>

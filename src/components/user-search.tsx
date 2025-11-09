@@ -95,9 +95,9 @@ export function UserSearch() {
         )}
       </div>
 
-      {/* Search Results Dropdown - POSITIONED BELOW SEARCH BAR */}
+      {/* Search Results Dropdown - FIXED POSITION IN VIEWPORT */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto z-[50]">
+        <div className="fixed top-20 left-4 right-4 md:left-1/2 md:transform md:-translate-x-1/2 md:w-full md:max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto z-[9999]">
           {loading ? (
             <div className="p-4 text-center text-gray-500">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
