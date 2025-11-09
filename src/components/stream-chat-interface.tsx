@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { StreamChat, Channel as StreamChannel } from "stream-chat"
+import { StreamChat } from "stream-chat"
 import {
   Chat,
   Channel,
@@ -15,7 +15,7 @@ import {
   useChannelStateContext,
   useChatContext,
 } from "stream-chat-react"
-import { StreamVideo, StreamVideoClient, Call } from "@stream-io/video-react-sdk"
+// Removed StreamVideo imports to fix crashes
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,14 +26,12 @@ import {
   Phone, 
   Video, 
   Info, 
-  UserPlus,
   Settings,
   Bell,
   Sparkles,
   Smile,
   Camera,
-  Mic,
-  PhoneCall
+  Mic
 } from "lucide-react"
 import "stream-chat-react/dist/css/v2/index.css"
 import "./stream-custom.css"
@@ -174,12 +172,12 @@ export function StreamChatInterface() {
   const { data: session } = useSession()
   const router = useRouter()
   const [client, setClient] = useState<StreamChat | null>(null)
-  const [videoClient, setVideoClient] = useState<StreamVideoClient | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [showSearch, setShowSearch] = useState(false)
-  const [activeCall, setActiveCall] = useState<Call | null>(null)
+  const [showCallModal, setShowCallModal] = useState(false)
+  const [callType, setCallType] = useState<'audio' | 'video'>('audio')
 
 
   useEffect(() => {
@@ -211,19 +209,7 @@ export function StreamChatInterface() {
           token
         )
 
-        // Initialize Video Client with MINIMAL data
-        const videoClientInstance = new StreamVideoClient({
-          apiKey,
-          user: {
-            id: userId,
-            name: userName,
-            // Remove image to avoid 5KB limit
-          },
-          token,
-        })
-
         setClient(chatClient)
-        setVideoClient(videoClientInstance)
       } catch (err) {
         console.error("Stream initialization error:", err)
         setError(err instanceof Error ? err.message : "Failed to initialize chat")
@@ -235,9 +221,6 @@ export function StreamChatInterface() {
     return () => {
       if (client) {
         client.disconnectUser()
-      }
-      if (videoClient) {
-        videoClient.disconnectUser()
       }
     }
   }, [session])
@@ -277,25 +260,20 @@ export function StreamChatInterface() {
     }
   }, [client])
 
-  const startCall = useCallback(async (callType: 'audio' | 'video') => {
-    if (!videoClient) return
-
-    try {
-      // We'll get the current channel from the context in the header component
-      const callId = `call-${Date.now()}`
-      const call = videoClient.call(callType === 'video' ? 'default' : 'audio', callId)
-      
-      await call.getOrCreate({
-        data: {
-          members: [{ user_id: client?.userID || '' }],
-        },
-      })
-
-      setActiveCall(call)
-    } catch (error) {
-      console.error("Failed to start call:", error)
-    }
-  }, [videoClient, client])
+  const startCall = useCallback(async (type: 'audio' | 'video') => {
+    setCallType(type)
+    setShowCallModal(true)
+    
+    // For now, just show a modal. In a real implementation, you would:
+    // 1. Send a message to the channel about the call
+    // 2. Use WebRTC or a video calling service
+    // 3. Handle call acceptance/rejection
+    
+    // Auto-hide the modal after 10 seconds to simulate call timeout
+    setTimeout(() => {
+      setShowCallModal(false)
+    }, 10000)
+  }, [])
 
   useEffect(() => {
     const delayedSearch = setTimeout(() => {
@@ -352,7 +330,7 @@ STREAM_API_SECRET=your_secret
     )
   }
 
-  if (!client || !videoClient) {
+  if (!client) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-black to-purple-900 flex items-center justify-center">
         <div className="text-center">
@@ -381,8 +359,7 @@ STREAM_API_SECRET=your_secret
   }
 
   return (
-    <StreamVideo client={videoClient}>
-      <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex">
+    <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex">
         <Chat client={client} theme="str-chat__theme-dark">
           {/* Enhanced Sidebar */}
           <div className="w-[380px] bg-black/50 backdrop-blur-xl border-r border-gray-800/50 flex flex-col">
@@ -509,18 +486,28 @@ STREAM_API_SECRET=your_secret
           </div>
         </Chat>
 
-        {/* Active Call Overlay */}
-        {activeCall && (
+        {/* Call Modal */}
+        {showCallModal && (
           <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center">
-            <div className="bg-gray-900/90 rounded-2xl p-8 text-center">
-              <PhoneCall className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
-              <h3 className="text-xl font-semibold text-white mb-2">Call in Progress</h3>
-              <p className="text-gray-400 mb-6">Connecting...</p>
+            <div className="bg-gray-900/90 rounded-2xl p-8 text-center max-w-md">
+              {callType === 'video' ? (
+                <Video className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-pulse" />
+              ) : (
+                <Phone className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
+              )}
+              <h3 className="text-xl font-semibold text-white mb-2">
+                {callType === 'video' ? 'Video Call' : 'Voice Call'}
+              </h3>
+              <p className="text-gray-400 mb-6">
+                {callType === 'video' ? 'Starting video call...' : 'Starting voice call...'}
+              </p>
+              <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                <p className="text-yellow-400 text-sm">
+                  📞 Video calling feature is in development. This is a demo modal.
+                </p>
+              </div>
               <Button
-                onClick={() => {
-                  activeCall.leave()
-                  setActiveCall(null)
-                }}
+                onClick={() => setShowCallModal(false)}
                 variant="destructive"
                 className="rounded-full"
               >
@@ -530,6 +517,5 @@ STREAM_API_SECRET=your_secret
           </div>
         )}
       </div>
-    </StreamVideo>
   )
 }
