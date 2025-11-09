@@ -470,15 +470,7 @@ STREAM_API_SECRET=your_secret
               />
             </div>
 
-            {/* Quick Actions */}
-            <div className="p-4 border-t border-gray-800/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
-              <div className="flex justify-center gap-2">
-                <Button size="sm" variant="ghost" className="hover:bg-white/10">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  New Chat
-                </Button>
-              </div>
-            </div>
+
           </div>
 
           {/* Enhanced Chat Area */}
