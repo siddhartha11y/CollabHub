@@ -26,43 +26,35 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Get all notifications for this user across all workspaces they're a member of
+    // Fetch notifications for the user
     const notifications = await prisma.notification.findMany({
       where: {
-        userId: user.id,
-        workspace: {
-          members: {
-            some: {
-              userId: user.id
-            }
-          }
-        }
+        userId: user.id
       },
       include: {
-        task: {
-          select: {
-            id: true,
-            title: true,
-            status: true
-          }
-        },
         workspace: {
           select: {
             id: true,
             name: true,
             slug: true
           }
+        },
+        task: {
+          select: {
+            id: true,
+            title: true,
+            status: true
+          }
         }
       },
       orderBy: {
         createdAt: 'desc'
-      },
-      take: 50 // Limit to 50 most recent notifications
+      }
     })
 
     return NextResponse.json(notifications)
   } catch (error) {
-    console.error("Get global notifications error:", error)
+    console.error("Fetch notifications error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -84,13 +76,6 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     const { notificationIds, markAsRead } = body
 
-    if (!Array.isArray(notificationIds) || typeof markAsRead !== 'boolean') {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 }
-      )
-    }
-
     // Get user
     const user = await prisma.user.findUnique({
       where: { email: session.user.email }
@@ -103,11 +88,11 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // Update notifications (only user's own notifications)
+    // Update notifications
     await prisma.notification.updateMany({
       where: {
         id: { in: notificationIds },
-        userId: user.id
+        userId: user.id // Ensure user can only update their own notifications
       },
       data: {
         isRead: markAsRead
@@ -116,7 +101,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Update global notifications error:", error)
+    console.error("Update notifications error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -138,13 +123,6 @@ export async function DELETE(req: NextRequest) {
     const body = await req.json()
     const { notificationIds } = body
 
-    if (!Array.isArray(notificationIds)) {
-      return NextResponse.json(
-        { error: "Invalid request body" },
-        { status: 400 }
-      )
-    }
-
     // Get user
     const user = await prisma.user.findUnique({
       where: { email: session.user.email }
@@ -157,17 +135,17 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    // Delete notifications (only user's own notifications)
+    // Delete notifications
     await prisma.notification.deleteMany({
       where: {
         id: { in: notificationIds },
-        userId: user.id
+        userId: user.id // Ensure user can only delete their own notifications
       }
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Delete global notifications error:", error)
+    console.error("Delete notifications error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
