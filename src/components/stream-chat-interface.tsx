@@ -77,10 +77,29 @@ function UserProfileSection({ userId, userName }: { userId?: string, userName?: 
 // Real Video Call Component
 function VideoCallUI({ call, onEndCall }: { call: Call; onEndCall: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black z-50">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
       <StreamCall call={call}>
-        <SpeakerLayout />
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+        {/* Header */}
+        <div className="bg-gray-900/80 p-4 flex items-center justify-between">
+          <h3 className="text-white text-lg font-semibold">Video Call</h3>
+          <Button
+            onClick={onEndCall}
+            variant="destructive"
+            size="sm"
+            className="rounded-full"
+          >
+            <PhoneOff className="w-4 h-4 mr-2" />
+            End Call
+          </Button>
+        </div>
+        
+        {/* Video Area */}
+        <div className="flex-1 relative">
+          <SpeakerLayout />
+        </div>
+        
+        {/* Call Controls */}
+        <div className="bg-gray-900/80 p-4 flex justify-center">
           <CallControls onLeave={onEndCall} />
         </div>
       </StreamCall>
@@ -312,28 +331,35 @@ export function StreamChatInterface() {
           setClient(chatClient)
           setVideoClient(videoClientInstance)
 
-          // Listen for incoming calls via Stream Video
-          videoClientInstance.on('call.ring', (event) => {
-            console.log('Incoming call event:', event)
-            if (event.call) {
-              // Get caller info
-              const members = event.call.state.members || []
-              const caller = members.find(m => m.user.id !== videoClientInstance.user.id)
-              
-              setIncomingCall({
-                call: event.call,
-                callerName: caller?.user.name || 'Unknown',
-                callType: 'video' // Default to video, could be enhanced
-              })
-            }
-          })
-
-          // Listen for call messages (backup method)
+          // Listen for call messages
           chatClient.on('message.new', async (event) => {
             const message = event.message
-            if (message?.text?.includes('CALL_') && message.user?.id !== chatClient.userID) {
-              console.log('Call message received:', message.text)
-              // This is just for chat notification, real call handling is via Stream Video events
+            if (message?.text?.includes('CALL_START_') && message.user?.id !== chatClient.userID) {
+              console.log('Incoming call message:', message.text)
+              
+              // Extract call ID from message
+              const callIdMatch = message.text.match(/CALL_START_(\S+)/)
+              const callId = callIdMatch ? callIdMatch[1] : null
+              
+              if (callId) {
+                // Create call object for receiver
+                const call = videoClientInstance.call('default', callId)
+                
+                // Try to get the existing call
+                try {
+                  await call.get()
+                  
+                  setIncomingCall({
+                    call,
+                    callerName: message.user?.name || 'Unknown',
+                    callType: 'video'
+                  })
+                  
+                  console.log('Incoming call set up successfully')
+                } catch (error) {
+                  console.error('Failed to get call:', error)
+                }
+              }
             }
           })
         }
@@ -449,9 +475,9 @@ export function StreamChatInterface() {
 
       console.log('Call created:', callResponse)
 
-      // Send call message to channel for backup notification
+      // Send call message to channel with call ID
       await activeChannel.sendMessage({
-        text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started`
+        text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started - CALL_START_${callId}`
       })
 
       // Join the call immediately for caller
