@@ -211,7 +211,10 @@ function CustomChatHeader({ onAudioCall, onVideoCall }: {
         <Button
           variant="ghost"
           size="sm"
-          onClick={onAudioCall}
+          onClick={() => {
+            console.log('Audio call button clicked!')
+            onAudioCall()
+          }}
           className="hover:bg-green-500/20 hover:text-green-400 transition-all duration-200"
         >
           <Phone className="w-5 h-5" />
@@ -219,7 +222,10 @@ function CustomChatHeader({ onAudioCall, onVideoCall }: {
         <Button
           variant="ghost"
           size="sm"
-          onClick={onVideoCall}
+          onClick={() => {
+            console.log('Video call button clicked!')
+            onVideoCall()
+          }}
           className="hover:bg-blue-500/20 hover:text-blue-400 transition-all duration-200"
         >
           <Video className="w-5 h-5" />
@@ -372,11 +378,17 @@ export function StreamChatInterface() {
   }, [client])
 
   const startCall = useCallback(async (callType: 'audio' | 'video') => {
-    if (!client) return
+    console.log('startCall called with:', callType)
+    
+    if (!client) {
+      console.error('No client available')
+      return
+    }
 
     try {
       // Get current channel
       const channels = Object.values(client.activeChannels || {})
+      console.log('Available channels:', channels.length)
       const activeChannel = channels[0]
       
       if (!activeChannel) {
@@ -384,8 +396,11 @@ export function StreamChatInterface() {
         return
       }
 
+      console.log('Active channel found:', activeChannel.id)
+
       // Get other members
       const members = Object.values(activeChannel.state.members || {})
+      console.log('Channel members:', members.length)
       const otherMember = members.find((member: any) => member.user_id !== client.userID)
       
       if (!otherMember) {
@@ -393,11 +408,15 @@ export function StreamChatInterface() {
         return
       }
 
+      console.log('Other member found:', otherMember.user_id)
+
       // Send call message to channel
       await activeChannel.sendMessage({
         text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started - CALL_${callType.toUpperCase()}_${client.userID}_${Date.now()}`,
         type: 'system'
       })
+
+      console.log('Call message sent')
 
       // Show call modal for caller
       setCallModal({
@@ -407,6 +426,8 @@ export function StreamChatInterface() {
         callerName: otherMember.user?.name || 'Unknown',
         isActive: true
       })
+
+      console.log('Call modal set')
 
     } catch (error) {
       console.error("Failed to start call:", error)
