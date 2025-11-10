@@ -33,6 +33,15 @@ import {
   Mic,
   PhoneOff
 } from "lucide-react"
+import { 
+  StreamVideo, 
+  StreamVideoClient, 
+  Call,
+  CallControls,
+  SpeakerLayout,
+  StreamCall,
+  useCallStateHooks
+} from "@stream-io/video-react-sdk"
 import "stream-chat-react/dist/css/v2/index.css"
 import "./stream-custom.css"
 import { useUserImage } from "@/hooks/use-user-image"
@@ -65,23 +74,33 @@ function UserProfileSection({ userId, userName }: { userId?: string, userName?: 
   )
 }
 
-// Simple Call Modal Component
-function CallModal({ 
+// Real Video Call Component
+function VideoCallUI({ call, onEndCall }: { call: Call; onEndCall: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black z-50">
+      <StreamCall call={call}>
+        <SpeakerLayout />
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+          <CallControls onLeave={onEndCall} />
+        </div>
+      </StreamCall>
+    </div>
+  )
+}
+
+// Incoming Call Modal
+function IncomingCallModal({ 
   isOpen, 
-  callType, 
   callerName, 
-  isIncoming, 
+  callType,
   onAccept, 
-  onReject, 
-  onEndCall 
+  onReject 
 }: {
   isOpen: boolean
+  callerName: string
   callType: 'audio' | 'video'
-  callerName?: string
-  isIncoming?: boolean
-  onAccept?: () => void
-  onReject?: () => void
-  onEndCall?: () => void
+  onAccept: () => void
+  onReject: () => void
 }) {
   if (!isOpen) return null
 
@@ -96,47 +115,26 @@ function CallModal({
           )}
         </div>
         
-        {isIncoming ? (
-          <>
-            <h3 className="text-2xl font-semibold text-white mb-2">Incoming {callType === 'video' ? 'Video' : 'Voice'} Call</h3>
-            <p className="text-gray-400 mb-8">{callerName || 'Unknown'} is calling you</p>
-            
-            <div className="flex justify-center gap-6">
-              <Button
-                onClick={onReject}
-                variant="destructive"
-                size="lg"
-                className="rounded-full w-16 h-16 p-0"
-              >
-                <PhoneOff className="w-6 h-6" />
-              </Button>
-              
-              <Button
-                onClick={onAccept}
-                className="bg-green-500 hover:bg-green-600 rounded-full w-16 h-16 p-0"
-              >
-                <Phone className="w-6 h-6" />
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h3 className="text-2xl font-semibold text-white mb-2">{callType === 'video' ? 'Video' : 'Voice'} Call Active</h3>
-            <p className="text-gray-400 mb-8">Connected with {callerName || 'participant'}</p>
-            
-            <div className="flex justify-center gap-4">
-              <Button
-                onClick={onEndCall}
-                variant="destructive"
-                size="lg"
-                className="rounded-full px-6"
-              >
-                <PhoneOff className="w-5 h-5 mr-2" />
-                End Call
-              </Button>
-            </div>
-          </>
-        )}
+        <h3 className="text-2xl font-semibold text-white mb-2">Incoming {callType === 'video' ? 'Video' : 'Voice'} Call</h3>
+        <p className="text-gray-400 mb-8">{callerName} is calling you</p>
+        
+        <div className="flex justify-center gap-6">
+          <Button
+            onClick={onReject}
+            variant="destructive"
+            size="lg"
+            className="rounded-full w-16 h-16 p-0"
+          >
+            <PhoneOff className="w-6 h-6" />
+          </Button>
+          
+          <Button
+            onClick={onAccept}
+            className="bg-green-500 hover:bg-green-600 rounded-full w-16 h-16 p-0"
+          >
+            <Phone className="w-6 h-6" />
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -254,19 +252,19 @@ export function StreamChatInterface() {
   const { data: session } = useSession()
   const router = useRouter()
   const [client, setClient] = useState<StreamChat | null>(null)
+  const [videoClient, setVideoClient] = useState<StreamVideoClient | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [showSearch, setShowSearch] = useState(false)
   
   // Call states
-  const [callModal, setCallModal] = useState({
-    isOpen: false,
-    type: 'video' as 'audio' | 'video',
-    isIncoming: false,
-    callerName: '',
-    isActive: false
-  })
+  const [activeCall, setActiveCall] = useState<Call | null>(null)
+  const [incomingCall, setIncomingCall] = useState<{
+    call: Call
+    callerName: string
+    callType: 'audio' | 'video'
+  } | null>(null)
 
 
   useEffect(() => {
@@ -300,25 +298,41 @@ export function StreamChatInterface() {
           token
         )
 
+        // Initialize Video Client
+        const videoClientInstance = new StreamVideoClient({
+          apiKey,
+          user: {
+            id: userId,
+            name: userName,
+          },
+          token,
+        })
+
         if (isMounted) {
           setClient(chatClient)
+          setVideoClient(videoClientInstance)
 
           // Listen for call messages
-          chatClient.on('message.new', (event) => {
+          chatClient.on('message.new', async (event) => {
             const message = event.message
             if (message?.text?.includes('CALL_') && message.user?.id !== chatClient.userID) {
-              // Parse call type from message
+              // Parse call info from message
               const isVideo = message.text.includes('CALL_VIDEO_')
               const isAudio = message.text.includes('CALL_AUDIO_')
               
               if (isVideo || isAudio) {
-                // Show incoming call
-                setCallModal({
-                  isOpen: true,
-                  type: isVideo ? 'video' : 'audio',
-                  isIncoming: true,
+                // Extract call ID from message
+                const callIdMatch = message.text.match(/CALL_\w+_\w+_(\d+)/)
+                const callId = callIdMatch ? `call-${callIdMatch[1]}` : `call-${Date.now()}`
+                
+                // Create call object
+                const call = videoClientInstance.call('default', callId)
+                
+                // Set incoming call
+                setIncomingCall({
+                  call,
                   callerName: message.user?.name || 'Unknown',
-                  isActive: false
+                  callType: isVideo ? 'video' : 'audio'
                 })
               }
             }
@@ -338,6 +352,9 @@ export function StreamChatInterface() {
       isMounted = false
       if (client) {
         client.disconnectUser().catch(console.error)
+      }
+      if (videoClient) {
+        videoClient.disconnectUser().catch(console.error)
       }
     }
   }, [session])
@@ -378,17 +395,11 @@ export function StreamChatInterface() {
   }, [client])
 
   const startCall = useCallback(async (callType: 'audio' | 'video') => {
-    console.log('startCall called with:', callType)
-    
-    if (!client) {
-      console.error('No client available')
-      return
-    }
+    if (!client || !videoClient) return
 
     try {
       // Get current channel
       const channels = Object.values(client.activeChannels || {})
-      console.log('Available channels:', channels.length)
       const activeChannel = channels[0]
       
       if (!activeChannel) {
@@ -396,11 +407,8 @@ export function StreamChatInterface() {
         return
       }
 
-      console.log('Active channel found:', activeChannel.id)
-
       // Get other members
       const members = Object.values(activeChannel.state.members || {})
-      console.log('Channel members:', members.length)
       const otherMember = members.find((member: any) => member.user_id !== client.userID)
       
       if (!otherMember) {
@@ -408,58 +416,70 @@ export function StreamChatInterface() {
         return
       }
 
-      console.log('Other member found:', otherMember.user_id)
+      // Create unique call ID
+      const callId = `call-${Date.now()}`
+      
+      // Create the call
+      const call = videoClient.call('default', callId)
+      
+      // Create call with members
+      await call.getOrCreate({
+        data: {
+          members: [
+            { user_id: client.userID! },
+            { user_id: otherMember.user_id || otherMember.user?.id }
+          ],
+        },
+        ring: true,
+      })
 
       // Send call message to channel
       await activeChannel.sendMessage({
         text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started - CALL_${callType.toUpperCase()}_${client.userID}_${Date.now()}`
       })
 
-      console.log('Call message sent')
-
-      // Show call modal for caller
-      setCallModal({
-        isOpen: true,
-        type: callType,
-        isIncoming: false,
-        callerName: otherMember.user?.name || 'Unknown',
-        isActive: true
-      })
-
-      console.log('Call modal set')
+      // Join the call
+      await call.join()
+      setActiveCall(call)
 
     } catch (error) {
       console.error("Failed to start call:", error)
     }
-  }, [client])
+  }, [client, videoClient])
 
-  const acceptCall = useCallback(() => {
-    setCallModal(prev => ({
-      ...prev,
-      isIncoming: false,
-      isActive: true
-    }))
-  }, [])
+  const acceptCall = useCallback(async () => {
+    if (!incomingCall) return
 
-  const rejectCall = useCallback(() => {
-    setCallModal({
-      isOpen: false,
-      type: 'video',
-      isIncoming: false,
-      callerName: '',
-      isActive: false
-    })
-  }, [])
+    try {
+      await incomingCall.call.join()
+      setActiveCall(incomingCall.call)
+      setIncomingCall(null)
+    } catch (error) {
+      console.error('Failed to accept call:', error)
+    }
+  }, [incomingCall])
 
-  const endCall = useCallback(() => {
-    setCallModal({
-      isOpen: false,
-      type: 'video',
-      isIncoming: false,
-      callerName: '',
-      isActive: false
-    })
-  }, [])
+  const rejectCall = useCallback(async () => {
+    if (!incomingCall) return
+
+    try {
+      await incomingCall.call.reject()
+      setIncomingCall(null)
+    } catch (error) {
+      console.error('Failed to reject call:', error)
+    }
+  }, [incomingCall])
+
+  const endCall = useCallback(async () => {
+    if (!activeCall) return
+
+    try {
+      await activeCall.leave()
+      setActiveCall(null)
+    } catch (error) {
+      console.error('Failed to end call:', error)
+    }
+  }, [activeCall])
 
   useEffect(() => {
     const delayedSearch = setTimeout(() => {
@@ -516,7 +536,7 @@ STREAM_API_SECRET=your_secret
     )
   }
 
-  if (!client) {
+  if (!client || !videoClient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-black to-purple-900 flex items-center justify-center">
         <div className="text-center">
@@ -545,7 +565,8 @@ STREAM_API_SECRET=your_secret
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex">
+    <StreamVideo client={videoClient}>
+      <div className="h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex">
         <Chat client={client} theme="str-chat__theme-dark">
           {/* Enhanced Sidebar */}
           <div className="w-[380px] bg-black/50 backdrop-blur-xl border-r border-gray-800/50 flex flex-col">
@@ -672,16 +693,22 @@ STREAM_API_SECRET=your_secret
           </div>
         </Chat>
 
-        {/* Call Modal */}
-        <CallModal
-          isOpen={callModal.isOpen}
-          callType={callModal.type}
-          callerName={callModal.callerName}
-          isIncoming={callModal.isIncoming}
-          onAccept={acceptCall}
-          onReject={rejectCall}
-          onEndCall={endCall}
-        />
+        {/* Incoming Call Modal */}
+        {incomingCall && (
+          <IncomingCallModal
+            isOpen={true}
+            callerName={incomingCall.callerName}
+            callType={incomingCall.callType}
+            onAccept={acceptCall}
+            onReject={rejectCall}
+          />
+        )}
+
+        {/* Active Video Call */}
+        {activeCall && (
+          <VideoCallUI call={activeCall} onEndCall={endCall} />
+        )}
       </div>
+    </StreamVideo>
   )
 }
