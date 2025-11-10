@@ -412,8 +412,7 @@ export function StreamChatInterface() {
 
       // Send call message to channel
       await activeChannel.sendMessage({
-        text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started - CALL_${callType.toUpperCase()}_${client.userID}_${Date.now()}`,
-        type: 'system'
+        text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started - CALL_${callType.toUpperCase()}_${client.userID}_${Date.now()}`
       })
 
       console.log('Call message sent')
