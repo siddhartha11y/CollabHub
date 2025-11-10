@@ -23,11 +23,8 @@ import {
   CallingState,
   ParticipantView,
   StreamCall,
-  useCallStateHooks,
-  RingingCall,
-  useCall
+  useCallStateHooks
 } from "@stream-io/video-react-sdk"
-import "@stream-io/video-react-sdk/dist/css/index.css"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
