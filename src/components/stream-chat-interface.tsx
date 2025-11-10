@@ -312,29 +312,28 @@ export function StreamChatInterface() {
           setClient(chatClient)
           setVideoClient(videoClientInstance)
 
-          // Listen for call messages
+          // Listen for incoming calls via Stream Video
+          videoClientInstance.on('call.ring', (event) => {
+            console.log('Incoming call event:', event)
+            if (event.call) {
+              // Get caller info
+              const members = event.call.state.members || []
+              const caller = members.find(m => m.user.id !== videoClientInstance.user.id)
+              
+              setIncomingCall({
+                call: event.call,
+                callerName: caller?.user.name || 'Unknown',
+                callType: 'video' // Default to video, could be enhanced
+              })
+            }
+          })
+
+          // Listen for call messages (backup method)
           chatClient.on('message.new', async (event) => {
             const message = event.message
             if (message?.text?.includes('CALL_') && message.user?.id !== chatClient.userID) {
-              // Parse call info from message
-              const isVideo = message.text.includes('CALL_VIDEO_')
-              const isAudio = message.text.includes('CALL_AUDIO_')
-              
-              if (isVideo || isAudio) {
-                // Extract call ID from message
-                const callIdMatch = message.text.match(/CALL_\w+_\w+_(\d+)/)
-                const callId = callIdMatch ? `call-${callIdMatch[1]}` : `call-${Date.now()}`
-                
-                // Create call object
-                const call = videoClientInstance.call('default', callId)
-                
-                // Set incoming call
-                setIncomingCall({
-                  call,
-                  callerName: message.user?.name || 'Unknown',
-                  callType: isVideo ? 'video' : 'audio'
-                })
-              }
+              console.log('Call message received:', message.text)
+              // This is just for chat notification, real call handling is via Stream Video events
             }
           })
         }
@@ -417,30 +416,45 @@ export function StreamChatInterface() {
       }
 
       // Create unique call ID
-      const callId = `call-${Date.now()}`
+      const callId = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      console.log('Creating call with ID:', callId)
       
       // Create the call
       const call = videoClient.call('default', callId)
       
-      // Create call with members
-      await call.getOrCreate({
+      // Create call with members and ring them
+      const callResponse = await call.getOrCreate({
         data: {
           members: [
             { user_id: client.userID! },
             { user_id: otherMember.user_id || otherMember.user?.id }
           ],
+          settings_override: {
+            video: {
+              camera_default_on: callType === 'video',
+            },
+            audio: {
+              mic_default_on: true,
+              default_device: 'default',
+            },
+          },
         },
-        ring: true,
+        ring: true, // This will trigger call.ring event for other users
       })
 
-      // Send call message to channel
+      console.log('Call created:', callResponse)
+
+      // Send call message to channel for backup notification
       await activeChannel.sendMessage({
-        text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started - CALL_${callType.toUpperCase()}_${client.userID}_${Date.now()}`
+        text: `📞 ${callType === 'video' ? 'Video' : 'Voice'} call started`
       })
 
-      // Join the call
+      // Join the call immediately for caller
       await call.join()
       setActiveCall(call)
+
+      console.log('Caller joined call')
 
     } catch (error) {
       console.error("Failed to start call:", error)
@@ -451,11 +465,22 @@ export function StreamChatInterface() {
     if (!incomingCall) return
 
     try {
+      console.log('Accepting call:', incomingCall.call.id)
+      
+      // Accept the call first
+      await incomingCall.call.accept()
+      
+      // Then join the call
       await incomingCall.call.join()
+      
       setActiveCall(incomingCall.call)
       setIncomingCall(null)
+      
+      console.log('Call accepted and joined successfully')
     } catch (error) {
       console.error('Failed to accept call:', error)
+      // Clear the incoming call on error
+      setIncomingCall(null)
     }
   }, [incomingCall])
 
@@ -463,10 +488,14 @@ export function StreamChatInterface() {
     if (!incomingCall) return
 
     try {
+      console.log('Rejecting call:', incomingCall.call.id)
       await incomingCall.call.reject()
       setIncomingCall(null)
+      console.log('Call rejected successfully')
     } catch (error) {
       console.error('Failed to reject call:', error)
+      // Clear the incoming call anyway
+      setIncomingCall(null)
     }
   }, [incomingCall])
 
