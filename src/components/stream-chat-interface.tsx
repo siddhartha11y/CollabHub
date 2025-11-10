@@ -433,10 +433,14 @@ export function StreamChatInterface() {
           settings_override: {
             video: {
               camera_default_on: callType === 'video',
+              target_resolution: {
+                width: 640,
+                height: 480,
+              },
             },
             audio: {
               mic_default_on: true,
-              default_device: 'default',
+              default_device: 'speaker',
             },
           },
         },
